@@ -11,12 +11,24 @@ Features
 * Visualize Slicer scenes (.mrb), and their views.
 * Visualize DICOM that were previously unsupported in XTK.
 
+Installation
+------------
 
+To install the XNAT image viewer into an XNAT installation:
 
+1. Make sure that you have an XNAT 1.6.4 or later installation or have updated your xnat_builder to 1.6.4 or later (if you've updated just your builder, it would be a good idea to first [update your XNAT installation](https://wiki.xnat.org/display/XNAT16/How+to+Upgrade+XNAT#HowtoUpgradeXNAT-NewReleaseOldDatabase) without the XNAT image viewer module and make sure the upgraded XNAT works properly).
 
+2. Clone the [XNAT image viewer github repository](https://github.com/NrgXnat/XNATImageViewer).
 
+3. Change directory to the cloned repository folder.
 
+4. Run a maven package operation:
 
+        mvn clean package
 
-  
-    
+5. Copy the resulting **target/xnatx-ximgview-*version*.jar** file to your xnat_builder's modules folder (this is either a folder named **modules** directly under the xnat_builder folder or specified by the **xdat.modules.location** variable in your **build.properties** file).
+
+6. Run the update script to install the module in your deployed web application.
+
+7. Start Tomcat, log into your XNAT server, and browse to any of your MR sessions. You should now see an action to view the image over in the Actions box.
+
