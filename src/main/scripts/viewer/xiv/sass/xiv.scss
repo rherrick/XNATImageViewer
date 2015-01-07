@@ -2,7 +2,8 @@
  * @author Sunil Kumar (kumar.sunil.p@gmail.com) 
  */
 
-@import "compass/reset";
+// the 'compass/reset' stylesheet has conflicts and is likely unnecessary
+//@import "compass/reset";
 @import "../../nrg/sass/nrg";
 @import "layoutframe";
 @import "xyzvlayout";
