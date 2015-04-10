@@ -1432,12 +1432,18 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
         var _VL2 =  _VLTb + _VLb ;
         _VL = parseInt(_VL2, 2);
 
-        // flag undefined sequence length
+        // flag undefined sequence length (int)
         if(_VL == 4294967295){
           _VL = 0;
         }
 
         _bytePointer+=_VL/2;
+      break;
+
+    case 65535:
+      // flag undefined sequence length (short)
+      // in case all bits of a short are 1
+      _VL = 0;
       break;
 
     default:
