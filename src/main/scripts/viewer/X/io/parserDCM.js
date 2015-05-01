@@ -93,6 +93,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // Removes any secondary DICOMs that cannot be displayed by checking for empty slice data.
     // When not removed, the imaging data cannot be displayed.
     // It also throws an error if this leads to a set of empty slices.
+    //************************************
     /*
 
     // Find slices with no imaging data
@@ -260,7 +261,29 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       // like localizer stacks.
       //
       //************************************
-      if (_ordering == 'image_position_patient' && first_image_stacks < 5){
+
+
+      //************************************
+      //
+      // ErasmusMC change (start)
+      //
+      //------------------------------------
+      // Explanation of change:
+      //
+      // For survey scans we also use the instance number for the ordering
+      // Oldcode: if (_ordering == 'image_position_patient' && first_image_stacks < 5) || 
+      //
+      //************************************
+
+      if ((_ordering == 'image_position_patient' && first_image_stacks < 5) ||
+          (object['series_description'].toLowerCase().includes("survey") && first_image_stacks < 20)) {
+
+          //************************************
+          //
+          // ErasmusMC addition (end)
+          //
+          //************************************
+
 	  var i = 0;
 	  var _switchToInstanceNumberOrdering = function(){
 	      window.console.log('Warning: Although series was initially' +
@@ -1978,6 +2001,35 @@ We would want to skip this (0012, 0064)
                 parseFloat(_image_orientation[5]) ];
             // _tagCount--;
             break;
+
+          //************************************
+          //
+          // ErasmusMC addition (start)
+          //
+          //------------------------------------
+          // Explanation of addition:
+          //
+          // We include the series description so we can check later if we are dealing with a survey scan, which requires special handling.
+          //************************************          
+          /*
+
+          case 0x103E:
+              object['series_description'] = "";
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                object['series_description'] += String.fromCharCode(_b0);
+                object['series_description'] += String.fromCharCode(_b1);
+              }
+              break;
+
+          //************************************
+          //
+          // ErasmusMC addition (end)
+          //
+          //************************************
 
           default:
             _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
