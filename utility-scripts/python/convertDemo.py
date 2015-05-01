@@ -194,19 +194,30 @@ def convertDemoToVM(demoPath):
 #
         
 def main():
+    type = os.environ.get('XIV_TYPE')
+    if type == '':
+      type = 'debug' # release, debug
+    print type 
 
     #----------------------------
     #  Params
     #----------------------------  
     imageViewerHome = os.environ.get('XNATIMAGEVIEWER_HOME')
     apacheHome = os.environ.get('CATALINA_HOME')
-    demoPath =  imageViewerHome + '/Demo.html'
+
+    # add var for production, else debug (demo/demo-min.html)
+    if (type == 'release'):
+      demoPath =  imageViewerHome + '/Demo-min.html'
+    else:
+      demoPath =  imageViewerHome + '/Demo.html'
+    
     vmTargets = [
         apacheHome + '/webapps/xnat/templates/screens/XImgView.vm', 
-        imageViewerHome + '/src/main/templates/screens/XImgView.vm', 
+        imageViewerHome + '/src/main/templates/screens/' + type + '/XImgView.vm', 
     ] 
+    # if apache_home, insert apacheHome into list
     popupTargets = [
-        imageViewerHome +   '/src/main/scripts/viewer/xiv/popup.html'
+        imageViewerHome +   '/src/main/scripts/viewer/xiv/' + type + '/popup.html'
     ]
 
 
