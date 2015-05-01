@@ -197,7 +197,6 @@ def main():
     type = os.environ.get('XIV_TYPE')
     if type == '':
       type = 'debug' # release, debug
-    print type 
 
     #----------------------------
     #  Params
