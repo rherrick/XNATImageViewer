@@ -83,6 +83,41 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // needed, for renderer2d and 3d legacy...
     object.MRI.loaded_files = object._file.length;
 
+    //************************************
+    //
+    // ErasmusMC addition (start)
+    //
+    //------------------------------------
+    // Explanation of addition:
+    //
+    // Removes any secondary DICOMs that cannot be displayed by checking for empty slice data.
+    // When not removed, the imaging data cannot be displayed.
+    // It also throws an error if this leads to a set of empty slices.
+    /*
+
+    // Find slices with no imaging data
+    var slicesToRemove = new Array();
+    for (var i = 0; i < object.slices.length; i++) {
+        if (object.slices[i].data == null)
+                slicesToRemove.push(i);
+    }
+
+    // Remove these slices
+    for (var i = 0; i < slicesToRemove.length; i++) {
+        object.slices.splice(slicesToRemove[i], 1);
+    }
+
+    // Check for empty imaging datasets
+    if (object.slices.length == 0) {
+        throw new Error('This scan does not contain imaging data that can be visualized.');
+    }
+
+    //************************************
+    //
+    // ErasmusMC addition (end)
+    //
+    //************************************
+
     // sort slices per series
     var series = {};
     var imageSeriesPushed = {};
@@ -1569,9 +1604,9 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       //------------------------------------
       // Explanation of addition:
       //
-      // Certain DICOMS contain sequential items (SQ/subtags). When not handles, it cannot load them properly.
+      // Certain DICOMS contain sequential items (SQ/subtags). When not handled, it cannot load them properly.
       // The parsing algorithm assumes that each DICOM field contains the size of the value.
-      // When not handled properly, the algorithm skips the remainder of the DICOM and thus fails to load imaging data.
+      // When not handled properly, the algorithm skips the remainder of the DICOM and thus fails to load the imaging data.
       // Therefore we check the subtags and step correctly to the next bytes.
       // Note the different scanners create SQ differently. Some add zero's to the end of the SQ.
       // Also see DICOM documentation e.g. https://www.leadtools.com/sdk/medical/dicom-spec10.htm
