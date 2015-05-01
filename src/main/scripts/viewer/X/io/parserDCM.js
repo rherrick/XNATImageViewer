@@ -1440,12 +1440,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
         _bytePointer+=_VL/2;
       break;
 
-    case 65535:
-      // flag undefined sequence length (short)
-      // in case all bits of a short are 1
-      _VL = 0;
-      break;
-
     default:
       _bytePointer+=_VL/2;
         break;
@@ -1567,6 +1561,52 @@ X.parserDCM.prototype.parseStream = function(data, object) {
 
       _VR = _bytes[_bytePointer++];
       _VL = _bytes[_bytePointer++];
+
+      //************************************
+      //
+      // ErasmusMC addition (start)
+      //
+      //------------------------------------
+      // Explanation of addition:
+      //
+      // Certain DICOMS contain sequential items (SQ/subtags). When not handles, it cannot load them properly.
+      // The parsing algorithm assumes that each DICOM field contains the size of the value.
+      // When not handled properly, the algorithm skips the remainder of the DICOM and thus fails to load imaging data.
+      // Therefore we check the subtags and step correctly to the next bytes.
+      // Note the different scanners create SQ differently. Some add zero's to the end of the SQ.
+      // Also see DICOM documentation e.g. https://www.leadtools.com/sdk/medical/dicom-spec10.htm
+      /*
+
+      if (_VR == 0xFFFF && _VL == 0xFFFF) {
+          // Detected possible SQ begin (subtag/sequence)
+          // Check for the DICOM SQ qualifier
+          if (_bytes[_bytePointer] == 0xFFFE && _bytes[_bytePointer + 1] == 0xE000) {
+              // Found SQ, skip another 4 bytes we found + another 4 bytes and continue
+              // byteStream reads 2 bytes for ushort per step, step for 8 bytes we increment with 4
+              _bytePointer += 4;
+              continue;
+          }
+          // Check for nested DICOM SQ qualifier)
+          if (_bytes[_bytePointer] == 0xFFFE && _bytes[_bytePointer + 1] == 0xE0DD) {
+              // Found SQ, skip another 4 bytes we found + another 4 bytes and continue
+              // byteStream reads 2 bytes for ushort per step, step for 8 bytes we increment with 4
+              _bytePointer += 4;
+              continue;
+          }
+      }
+
+      if ((_tagGroup == 0xFFFE && _tagElement == 0xE00D) || (_tagGroup == 0xFFFE && _tagElement == 0xE0DD)) {
+         if (_VR == 0x0000 && _VL == 0x0000) {
+              // Found end of SQ, if zero's are encountered, skip to next bytesequence.
+              continue;
+          }
+      }
+
+      //************************************
+      //
+      // ErasmusMC addition (end)
+      //
+      //************************************
 
 
       // Implicit VR Little Endian case
