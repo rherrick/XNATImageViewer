@@ -212,11 +212,11 @@ def main():
     
     vmTargets = [
         apacheHome + '/webapps/xnat/templates/screens/XImgView.vm', 
-        imageViewerHome + '/src/main/templates/screens/' + type + '/XImgView.vm', 
+        imageViewerHome + '/src/main/templates/screens/XImgView.vm', 
     ] 
     # if apache_home, insert apacheHome into list
     popupTargets = [
-        imageViewerHome +   '/src/main/scripts/viewer/xiv/' + type + '/popup.html'
+        imageViewerHome +   '/src/main/scripts/viewer/xiv/popup.html'
     ]
 
 
