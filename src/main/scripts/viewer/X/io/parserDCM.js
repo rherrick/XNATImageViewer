@@ -94,7 +94,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // When not removed, the imaging data cannot be displayed.
     // It also throws an error if this leads to a set of empty slices.
     //************************************
-    /*
 
     // Find slices with no imaging data
     var slicesToRemove = new Array();
@@ -271,12 +270,13 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       // Explanation of change:
       //
       // For survey scans we also use the instance number for the ordering
-      // Oldcode: if (_ordering == 'image_position_patient' && first_image_stacks < 5) || 
+      // Oldcode: if (_ordering == 'image_position_patient' && first_image_stacks < 5))  
       //
       //************************************
+      
 
       if ((_ordering == 'image_position_patient' && first_image_stacks < 5) ||
-          (object['series_description'].toLowerCase().includes("survey") && first_image_stacks < 20)) {
+          (object['series_description'] != undefined && object['series_description'].toLowerCase().search("survey") != -1 && first_image_stacks < 20)) {
 
           //************************************
           //
@@ -1633,7 +1633,7 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       // Therefore we check the subtags and step correctly to the next bytes.
       // Note the different scanners create SQ differently. Some add zero's to the end of the SQ.
       // Also see DICOM documentation e.g. https://www.leadtools.com/sdk/medical/dicom-spec10.htm
-      /*
+      //************************************
 
       if (_VR == 0xFFFF && _VL == 0xFFFF) {
           // Detected possible SQ begin (subtag/sequence)
@@ -2002,35 +2002,6 @@ We would want to skip this (0012, 0064)
             // _tagCount--;
             break;
 
-          //************************************
-          //
-          // ErasmusMC addition (start)
-          //
-          //------------------------------------
-          // Explanation of addition:
-          //
-          // We include the series description so we can check later if we are dealing with a survey scan, which requires special handling.
-          //************************************          
-          /*
-
-          case 0x103E:
-              object['series_description'] = "";
-              var i = 0;
-              for (i = 0; i < _VL / 2; i++) {
-                var _short = _bytes[_bytePointer++];
-                var _b0 = _short & 0x00FF;
-                var _b1 = (_short & 0xFF00) >> 8;
-                object['series_description'] += String.fromCharCode(_b0);
-                object['series_description'] += String.fromCharCode(_b1);
-              }
-              break;
-
-          //************************************
-          //
-          // ErasmusMC addition (end)
-          //
-          //************************************
-
           default:
             _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             break;
@@ -2072,6 +2043,34 @@ We would want to skip this (0012, 0064)
               slice['sop_instance_uid'] += String.fromCharCode(_b1);
             }
             break;
+
+          //************************************
+          //
+          // ErasmusMC addition (start)
+          //
+          //------------------------------------
+          // Explanation of addition:
+          //
+          // We include the series description so we can check later if we are dealing with a survey scan, which requires special handling.
+          //************************************          
+
+          case 0x103E:
+              object['series_description'] = "";
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                object['series_description'] += String.fromCharCode(_b0);
+                object['series_description'] += String.fromCharCode(_b1);
+              }
+              break;
+
+          //************************************
+          //
+          // ErasmusMC addition (end)
+          //
+          //************************************
 
           default:
             _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);

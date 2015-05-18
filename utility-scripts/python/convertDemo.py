@@ -204,7 +204,7 @@ def main():
     imageViewerHome = os.environ.get('XNATIMAGEVIEWER_HOME')
     apacheHome = os.environ.get('CATALINA_HOME')
 
-    # add var for production, else debug (demo/demo-min.html)
+    # Release version uses minified javascript/closure version
     if (type == 'release'):
       demoPath =  imageViewerHome + '/Demo-min.html'
     else:
@@ -214,12 +214,10 @@ def main():
         apacheHome + '/webapps/xnat/templates/screens/XImgView.vm', 
         imageViewerHome + '/src/main/templates/screens/XImgView.vm', 
     ] 
-    # if apache_home, insert apacheHome into list
+
     popupTargets = [
         imageViewerHome +   '/src/main/scripts/viewer/xiv/popup.html'
     ]
-
-
 
     #----------------------------
     #  Get the new files as lines
