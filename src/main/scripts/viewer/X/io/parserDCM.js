@@ -83,6 +83,41 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // needed, for renderer2d and 3d legacy...
     object.MRI.loaded_files = object._file.length;
 
+    //************************************
+    //
+    // ErasmusMC addition (start)
+    //
+    //------------------------------------
+    // Explanation of addition:
+    //
+    // Removes any secondary DICOMs that cannot be displayed by checking for empty slice data.
+    // When not removed, the imaging data cannot be displayed.
+    // It also throws an error if this leads to a set of empty slices.
+    //************************************
+
+    // Find slices with no imaging data
+    var slicesToRemove = new Array();
+    for (var i = 0; i < object.slices.length; i++) {
+        if (object.slices[i].data == null)
+                slicesToRemove.push(i);
+    }
+
+    // Remove these slices
+    for (var i = 0; i < slicesToRemove.length; i++) {
+        object.slices.splice(slicesToRemove[i], 1);
+    }
+
+    // Check for empty imaging datasets
+    if (object.slices.length == 0) {
+        throw new Error('This scan does not contain imaging data that can be visualized.');
+    }
+
+    //************************************
+    //
+    // ErasmusMC addition (end)
+    //
+    //************************************
+
     // sort slices per series
     var series = {};
     var imageSeriesPushed = {};
@@ -225,7 +260,30 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       // like localizer stacks.
       //
       //************************************
-      if (_ordering == 'image_position_patient' && first_image_stacks < 5){
+
+
+      //************************************
+      //
+      // ErasmusMC change (start)
+      //
+      //------------------------------------
+      // Explanation of change:
+      //
+      // For survey scans we also use the instance number for the ordering
+      // Oldcode: if (_ordering == 'image_position_patient' && first_image_stacks < 5))  
+      //
+      //************************************
+      
+
+      if ((_ordering == 'image_position_patient' && first_image_stacks < 5) ||
+          (object['series_description'] != undefined && object['series_description'].toLowerCase().search("survey") != -1 && first_image_stacks < 20)) {
+
+          //************************************
+          //
+          // ErasmusMC addition (end)
+          //
+          //************************************
+
 	  var i = 0;
 	  var _switchToInstanceNumberOrdering = function(){
 	      window.console.log('Warning: Although series was initially' +
@@ -1440,12 +1498,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
         _bytePointer+=_VL/2;
       break;
 
-    case 65535:
-      // flag undefined sequence length (short)
-      // in case all bits of a short are 1
-      _VL = 0;
-      break;
-
     default:
       _bytePointer+=_VL/2;
         break;
@@ -1567,6 +1619,52 @@ X.parserDCM.prototype.parseStream = function(data, object) {
 
       _VR = _bytes[_bytePointer++];
       _VL = _bytes[_bytePointer++];
+
+      //************************************
+      //
+      // ErasmusMC addition (start)
+      //
+      //------------------------------------
+      // Explanation of addition:
+      //
+      // Certain DICOMS contain sequential items (SQ/subtags). When not handled, it cannot load them properly.
+      // The parsing algorithm assumes that each DICOM field contains the size of the value.
+      // When not handled properly, the algorithm skips the remainder of the DICOM and thus fails to load the imaging data.
+      // Therefore we check the subtags and step correctly to the next bytes.
+      // Note the different scanners create SQ differently. Some add zero's to the end of the SQ.
+      // Also see DICOM documentation e.g. https://www.leadtools.com/sdk/medical/dicom-spec10.htm
+      //************************************
+
+      if (_VR == 0xFFFF && _VL == 0xFFFF) {
+          // Detected possible SQ begin (subtag/sequence)
+          // Check for the DICOM SQ qualifier
+          if (_bytes[_bytePointer] == 0xFFFE && _bytes[_bytePointer + 1] == 0xE000) {
+              // Found SQ, skip another 4 bytes we found + another 4 bytes and continue
+              // byteStream reads 2 bytes for ushort per step, step for 8 bytes we increment with 4
+              _bytePointer += 4;
+              continue;
+          }
+          // Check for nested DICOM SQ qualifier)
+          if (_bytes[_bytePointer] == 0xFFFE && _bytes[_bytePointer + 1] == 0xE0DD) {
+              // Found SQ, skip another 4 bytes we found + another 4 bytes and continue
+              // byteStream reads 2 bytes for ushort per step, step for 8 bytes we increment with 4
+              _bytePointer += 4;
+              continue;
+          }
+      }
+
+      if ((_tagGroup == 0xFFFE && _tagElement == 0xE00D) || (_tagGroup == 0xFFFE && _tagElement == 0xE0DD)) {
+         if (_VR == 0x0000 && _VL == 0x0000) {
+              // Found end of SQ, if zero's are encountered, skip to next bytesequence.
+              continue;
+          }
+      }
+
+      //************************************
+      //
+      // ErasmusMC addition (end)
+      //
+      //************************************
 
 
       // Implicit VR Little Endian case
@@ -1945,6 +2043,34 @@ We would want to skip this (0012, 0064)
               slice['sop_instance_uid'] += String.fromCharCode(_b1);
             }
             break;
+
+          //************************************
+          //
+          // ErasmusMC addition (start)
+          //
+          //------------------------------------
+          // Explanation of addition:
+          //
+          // We include the series description so we can check later if we are dealing with a survey scan, which requires special handling.
+          //************************************          
+
+          case 0x103E:
+              object['series_description'] = "";
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                object['series_description'] += String.fromCharCode(_b0);
+                object['series_description'] += String.fromCharCode(_b1);
+              }
+              break;
+
+          //************************************
+          //
+          // ErasmusMC addition (end)
+          //
+          //************************************
 
           default:
             _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);

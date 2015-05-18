@@ -194,22 +194,30 @@ def convertDemoToVM(demoPath):
 #
         
 def main():
+    type = os.environ.get('XIV_TYPE')
+    if type == '':
+      type = 'debug' # release, debug
 
     #----------------------------
     #  Params
     #----------------------------  
     imageViewerHome = os.environ.get('XNATIMAGEVIEWER_HOME')
     apacheHome = os.environ.get('CATALINA_HOME')
-    demoPath =  imageViewerHome + '/Demo.html'
+
+    # Release version uses minified javascript/closure version
+    if (type == 'release'):
+      demoPath =  imageViewerHome + '/Demo-min.html'
+    else:
+      demoPath =  imageViewerHome + '/Demo.html'
+    
     vmTargets = [
         apacheHome + '/webapps/xnat/templates/screens/XImgView.vm', 
         imageViewerHome + '/src/main/templates/screens/XImgView.vm', 
     ] 
+
     popupTargets = [
         imageViewerHome +   '/src/main/scripts/viewer/xiv/popup.html'
     ]
-
-
 
     #----------------------------
     #  Get the new files as lines
