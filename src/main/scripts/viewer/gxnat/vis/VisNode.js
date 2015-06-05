@@ -108,6 +108,35 @@ gxnat.vis.VisNode.prototype.getTitle = function() {
 }
 
 
+/**
+ * @type {?string}
+ * @private
+ */
+gxnat.vis.VisNode.prototype.sourceinfo_ = null;
+
+
+
+/**
+ * Allows setting of the sourceinfo. 
+ *
+ * @param {!string} sourceinfo The sourceinfo to set..
+ * @public
+ */
+gxnat.vis.VisNode.prototype.setSourceInfo = function(sourceinfo) {
+    this.sourceinfo_ = sourceinfo;
+}
+
+
+
+/**
+ * @return {!string}
+ * @public
+ */
+gxnat.vis.VisNode.prototype.getSourceInfo = function() {
+    return this.sourceinfo_;
+}
+
+
 
 /** 
  * @inheritDoc
@@ -126,6 +155,10 @@ gxnat.vis.VisNode.prototype.dispose = function() {
     if (this.title_){
 	delete this.title_;
     }
+
+    if (this.sourceinfo_){
+	delete this.sourceinfo_;
+    }
 }
 
 
@@ -141,5 +174,9 @@ goog.exportSymbol('gxnat.vis.VisNode.prototype.setTitle',
 	gxnat.vis.VisNode.prototype.setTitle);
 goog.exportSymbol('gxnat.vis.VisNode.prototype.getTitle',
 	gxnat.vis.VisNode.prototype.getTitle);
+goog.exportSymbol('gxnat.vis.VisNode.prototype.setSourceInfo',
+	gxnat.vis.VisNode.prototype.setSourceInfo);
+goog.exportSymbol('gxnat.vis.VisNode.prototype.getSourceInfo',
+	gxnat.vis.VisNode.prototype.getSourceInfo);
 goog.exportSymbol('gxnat.vis.VisNode.prototype.dispose',
 	gxnat.vis.VisNode.prototype.dispose);

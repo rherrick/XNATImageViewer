@@ -199,6 +199,7 @@ xiv.ui.ViewBoxInteractorHandler.TOGGLEABLE = {
     SETTINGS: 'Settings_' + goog.string.createUniqueString(),
     TWODPAN: 'TwoDPan_' + goog.string.createUniqueString(),
     TWODZOOM: 'TwoDZoom_' + goog.string.createUniqueString(),
+    FOLDER: 'Folder_' + goog.string.createUniqueString(),
 }
 
 
@@ -381,6 +382,11 @@ xiv.ui.ViewBoxInteractorHandler.prototype.createInteractors = function() {
     // Create the crosshair toggle rendering toggle
     //
     this.createTwoDZoomToggle();
+
+    //
+    // Create the folder toggle
+    //
+    this.createFolderToggle();
 
 
     //
@@ -1119,6 +1125,39 @@ function(){
 
     //this.panning_ = true;
     this.ViewBox_.fireToggleButton(xiv.ui.ViewBoxInteractorHandler.TOGGLEABLE.TWODPAN);
+}
+
+
+/**
+ * @public
+ */
+xiv.ui.ViewBoxInteractorHandler.prototype.createFolderToggle = 
+function(){    
+	if (this.ViewBox_.hasMultipleViewableTrees() || !this.ViewBox_.hasMultipleViewables()) {
+		return;
+	}
+	this.ViewBox_.createToggleButton(
+		'LEFT', 
+		xiv.ui.ViewBoxInteractorHandler.CSS.GENERIC_TOGGLE, 
+		xiv.ui.ViewBoxInteractorHandler.TOGGLEABLE.FOLDER,
+		'Select a different catalog or volume', 
+		function(button){
+		    this.clearCursorStyle_();
+		    var checked = button.getAttribute('checked').toString() == 'true';
+		    this.panning_ = checked;
+		  this.ViewBox_.hideSubComponent_(this.ViewBox_.ViewableGroupMenu_, 200);
+		    if (checked){
+		    	this.ViewBox_.doReload();
+		    	this.ViewBox_.showSubComponent_(this.ViewBox_.ViewableGroupMenu_, 200);
+			this.setCursorGrab_();
+			//this.ViewBox_.untoggle(
+			 //   xiv.ui.ViewBoxInteractorHandler.TOGGLEABLE.FOLDER);	
+		    }
+		}.bind(this), 
+		serverRoot + '/images/viewer/xiv/ui/ViewBox/Toggle-Folder.png');
+	
+	    //this.panning_ = true;
+	    this.ViewBox_.fireToggleButton(xiv.ui.ViewBoxInteractorHandler.TOGGLEABLE.FOLDER);
 }
 
 
@@ -2718,6 +2757,9 @@ goog.exportSymbol(
 goog.exportSymbol(
     'xiv.ui.ViewBoxInteractorHandler.prototype.createCrosshairToggle',
     xiv.ui.ViewBoxInteractorHandler.prototype.createCrosshairToggle);
+goog.exportSymbol(
+    'xiv.ui.ViewBoxInteractorHandler.prototype.createFolderToggle',
+    xiv.ui.ViewBoxInteractorHandler.prototype.createFolderToggle);
 goog.exportSymbol(
     'xiv.ui.ViewBoxInteractorHandler.prototype.createSettingsDialog',
     xiv.ui.ViewBoxInteractorHandler.prototype.createSettingsDialog);

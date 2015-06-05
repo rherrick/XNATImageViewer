@@ -125,7 +125,7 @@ xiv.ui.ViewableGroupMenu.prototype.render = function(parentElement) {
 	    goog.string.createUniqueString(),
 	'class': xiv.ui.ViewableGroupMenu.CSS.HEADER
     });
-    this.headerText_.innerHTML = '<b> Select Slicer Scene View <b>';
+    this.headerText_.innerHTML = '<b> Select Slicer Scene View </b>';
     goog.dom.append(this.getElement(), this.headerText_);
 
     if (!goog.isDefAndNotNull(this.ThumbnailGallery_)){

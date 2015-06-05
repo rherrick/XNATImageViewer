@@ -997,6 +997,9 @@ xiv.ui.ViewBox.prototype.loadViewableTree_ = function(ViewableTree){
 	// Show the Viewable group menu
 	//
 	this.showSubComponent_(this.ViewableGroupMenu_, 200);
+	if (viewGroups[0].getCategory()=="scans") {
+		$("." + xiv.ui.ViewableGroupMenu.CSS.HEADER).html("<b> Select catalog or volume </b>");
+	}
     }
     else {
 
@@ -1089,19 +1092,41 @@ function(ViewableSet, opt_initLoadComponents) {
     //
     // Prompt user if the ViewBox is In Use
     //
-    if (this.isInUse()){
+    if (this.isInUse() && (!(this.ViewableTrees_.length>0 && ViewableSet==this.ViewableTrees_[0]))){
 	this.showInUseDialog(function(){
 	    this.clearThumbnailLoadTime();	    
 	    reload();
 	}.bind(this))
 	return false;
     }
-
     return true;
 }
 
 
 
+/**
+ * Initiates a reload of the ViewBox using the first element in the current viewable tree
+ * @public
+ */
+xiv.ui.ViewBox.prototype.doReload = function () {
+	this.load(this.ViewableTrees_[0],undefined);
+}
+
+/**
+ * Returns boolean indicating whether or not there are multiple viewable trees in this viewbox
+ * @public
+ */
+xiv.ui.ViewBox.prototype.hasMultipleViewableTrees = function () {
+	return this.ViewableTrees_!=undefined && this.ViewableTrees_.length>1;
+}
+
+/**
+ * Returns boolean indicating whether or not the viewbox currently contains multiple viewables
+ * @public
+ */
+xiv.ui.ViewBox.prototype.hasMultipleViewables = function () {
+	return this.ViewableGroups_!=undefined && Object.keys(this.ViewableGroups_).length>1;
+}
 
 /**
  * Loads a gxnat.vis.ViewableTree object into the appropriate renderers.
@@ -2049,7 +2074,8 @@ xiv.ui.ViewBox.prototype.createToggleButton =
 	    this.toggleButtons_ = {};
 	}
 	else if (goog.isDefAndNotNull(this.toggleButtons_[identifier])){
-	    throw new Error('Invalid identifier for toggle button.  In use.');
+	    //throw new Error('Invalid identifier for toggle button.  In use.');
+		identifer=identifier+"A";
 	} 
 	this.toggleButtons_[identifier] = iconbutton;
 	//window.console.log(iconbutton, identifier);
@@ -2437,12 +2463,16 @@ goog.exportSymbol('xiv.ui.ViewBox.prototype.doNotHide',
 	xiv.ui.ViewBox.prototype.doNotHide);
 goog.exportSymbol('xiv.ui.ViewBox.prototype.setLayout',
 	xiv.ui.ViewBox.prototype.setLayout);
-
 goog.exportSymbol('xiv.ui.ViewBox.prototype.showCornerInteractors',
 	xiv.ui.ViewBox.prototype.showCornerInteractors);
-
 goog.exportSymbol('xiv.ui.ViewBox.prototype.load',
 	xiv.ui.ViewBox.prototype.load);
+goog.exportSymbol('xiv.ui.ViewBox.prototype.doReload',
+	xiv.ui.ViewBox.prototype.doReload);
+goog.exportSymbol('xiv.ui.ViewBox.prototype.hasMultipleViewableTrees',
+	xiv.ui.ViewBox.prototype.hasMultipleViewableTrees);
+goog.exportSymbol('xiv.ui.ViewBox.prototype.hasMultipleViewables',
+	xiv.ui.ViewBox.prototype.hasMultipleViewables);
 goog.exportSymbol('xiv.ui.ViewBox.prototype.addToMenu',
 	xiv.ui.ViewBox.prototype.addToMenu);
 goog.exportSymbol('xiv.ui.ViewBox.prototype.onToggleButtonClicked',
