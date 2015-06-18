@@ -75,7 +75,8 @@ goog.exportSymbol('gxnat.vis.AjaxViewableTree', gxnat.vis.AjaxViewableTree);
 gxnat.vis.AjaxViewableTree.VIEWABLE_KEY_MAP = {
     'ID': 'Scan ID',
     'Name': 'Name',
-    'type': 'Scan Type'
+    'type': 'Scan Type',
+    'series_description': 'Series Description'
 }
 
 

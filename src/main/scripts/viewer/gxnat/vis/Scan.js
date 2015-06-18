@@ -148,6 +148,13 @@ gxnat.vis.Scan.prototype.setViewableMetadata = function(){
     goog.base(this, 'setViewableMetadata');
 
     //
+    // Set the init frames to 0
+    //
+    if (goog.isDefAndNotNull(this.scanMetadata_['frames'])){
+    	this.sessionInfo['Total Frames'] = this.scanMetadata_['frames'];
+    }
+
+    //
     // Orientation
     //
     if (goog.isDefAndNotNull(this.scanMetadata_['parameters/orientation'])){
@@ -322,7 +329,9 @@ gxnat.vis.Scan.prototype.addFiles = function(fileNames) {
         vGroup.getViewables()[0].addFiles(fileNames, this.fileFilter);
     }, this);
 
-    this.sessionInfo['Total Frames'] = (this.ViewableGroups.length>0) ?  this.ViewableGroups[0].getViewables()[0].getFiles().length : 0;
+    if (this.sessionInfo['Total Frames'] == 0) {
+        this.sessionInfo['Total Frames'] = (this.ViewableGroups.length>0) ?  this.ViewableGroups[0].getViewables()[0].getFiles().length : 0;
+    }
 
     this.ViewableGroups.sort(function(a,b) {
         var a_hasdcm=false;

@@ -311,7 +311,12 @@ gxnat.ProjectTree.prototype.getBranchTitles = function(treeNode) {
     function(treeNode, key){
 	//window.console.log(treeNode[gxnat.ProjectTree.METADATA_KEY]);
 	if (key == 'projects') {
-	    nodeTitles.push(treeNode[gxnat.ProjectTree.METADATA_KEY]['ID']);
+        // HCP modification (ID being returned lower case)
+	    if (treeNode[gxnat.ProjectTree.METADATA_KEY]['ID']!=undefined) {
+	        nodeTitles.push(treeNode[gxnat.ProjectTree.METADATA_KEY]['ID']);
+	    } else {
+	        nodeTitles.push(treeNode[gxnat.ProjectTree.METADATA_KEY]['id']);
+        }
 	} else {
 	    nodeTitles.push(treeNode[gxnat.ProjectTree.METADATA_KEY]['label']);
 	}

@@ -126,6 +126,9 @@ xiv.ui.Thumbnail.prototype.createText_ = function(){
 
     if (goog.isDefAndNotNull(treeSessionInfo['Scan ID'])){
 	headerText += treeSessionInfo['Scan ID'];
+    	if (goog.isDefAndNotNull(treeSessionInfo['Series Description'])){
+		headerText += " - " + treeSessionInfo['Series Description'];
+	}
     } 
     else if (goog.isDefAndNotNull(treeSessionInfo['Name'])){
 	headerText = treeSessionInfo['Name'];
@@ -144,7 +147,7 @@ xiv.ui.Thumbnail.prototype.createText_ = function(){
     // Construct display text
     //
     var displayText =  '';
-    displayText += "<b><font size = '3'>" + headerText  + "</font></b><br>";
+    displayText += "<b><font size = '2'>" + headerText + "</font></b><br>";
 
     //
     // Other metadata to display
