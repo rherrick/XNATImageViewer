@@ -28,6 +28,8 @@ goog.require('xiv.ui.XtkController');
 xiv.ui.SliderBase = function(){
     goog.base(this);
     this.setLabel('Slider');
+    this.refreshCount_=0;
+
 }
 goog.inherits(xiv.ui.SliderBase, xiv.ui.XtkController);
 goog.exportSymbol('xiv.ui.SliderBase', xiv.ui.SliderBase);
@@ -363,15 +365,25 @@ xiv.ui.SliderBase.prototype.syncInputToSlider = function(input) {
  */
 xiv.ui.SliderBase.prototype.refresh = function() {
     //
-    // Updates the component (to be safe)
+    // Updates the component (to be safe) (but don't let this cause stack overflow)
     //
-    var oldValue = this.slider.getValue();
-    if (this.slider instanceof nrg.ui.Component){
-	this.slider.updateStyle();
+    this.refreshCount_++;
+    // NOTE:  This value set to 50 for Firefox.  Could be set higher for other browsers 
+    // (120 for IE, 200 or more for Chrome), but it seems to have no impact.
+    if (this.refreshCount_<50) {
+        var oldValue = this.slider.getValue();
+        if (this.slider instanceof nrg.ui.Component){
+    	this.slider.updateStyle();
+        }
+        this.slider.setValue(0);
+        this.slider.setValue(oldValue);
+        this.syncInputToSlider(this.valueInput);
+    } else if (this.refreshCount_==50) {
+        window.console.log("NOTE:  Slider refresh limit reached (prevent stack overflow)");
+        // Return refreshcount back to zero (after allowing time for loading) to allow user 
+        // to interact with the sliders and refresh as normal.
+        setTimeout(function() { this.refreshCount_=0; }.bind(this), 3000);
     }
-    this.slider.setValue(0);
-    this.slider.setValue(oldValue);
-    this.syncInputToSlider(this.valueInput);
 }
 
 
