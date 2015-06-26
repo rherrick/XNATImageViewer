@@ -1005,10 +1005,12 @@ nrg.ui.ZippyTree.prototype.onEndOfBranch_ = function(parentNode, opt_elt) {
     // Remove loadingImage, if it exists.
     //
     if (parentNode.hasLoadingIndicator() && 
-	!parentNode.loadingIndicatorRemoving()){
-	parentNode.removeLoadingIndicator(true);
-	//return;
-    } 
+	    !parentNode.loadingIndicatorRemoving()){
+	    parentNode.removeLoadingIndicator(true);
+		return;
+    } else if (!(parentNode.getTitle().indexOf("EXPERIMENTS")>=0)) {
+		this.findAndRemoveLoadingIndicator_(this,parentNode);
+	}
 
     //
     // Otherwise add the element
@@ -1016,6 +1018,32 @@ nrg.ui.ZippyTree.prototype.onEndOfBranch_ = function(parentNode, opt_elt) {
     addElement();
 }
 
+/**
+ * The loading indicator may not always be at the parent node (it's at the experiment node).  It may be one level further down.
+ * 
+ * @param {!Element} contentHolder
+ * @private
+ */
+nrg.ui.ZippyTree.prototype.findAndRemoveLoadingIndicator_ = function(startingPoint,parentNode) {
+	for (var node in startingPoint.Nodes_) {
+		if (startingPoint.Nodes_.hasOwnProperty(node)) {
+			if (startingPoint.Nodes_[node].getTitle().indexOf("EXPERIMENTS")>=0) { 
+				for (var innerNode in startingPoint.Nodes_[node].Nodes_) {
+					if (startingPoint.Nodes_[node].Nodes_.hasOwnProperty(innerNode)) {
+						if (startingPoint.Nodes_[node].Nodes_[innerNode]==parentNode) {
+							if (startingPoint.Nodes_[node].hasLoadingIndicator() && !startingPoint.Nodes_[node].loadingIndicatorRemoving()) {
+								startingPoint.Nodes_[node].removeLoadingIndicator(true);
+							}
+							return;
+						}
+					}
+				}
+			} else {
+				this.findAndRemoveLoadingIndicator_(startingPoint.Nodes_[node],parentNode);
+			}
+		}
+	}
+}
 
 
 /**

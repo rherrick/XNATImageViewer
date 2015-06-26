@@ -352,8 +352,8 @@ gxnat.vis.Scan.prototype.addFiles = function(fileNames) {
                 b_hasnii=true;
             }
         } 
-        var a_srtval = (a_hasdcm) ? 9 : (a_hasnii) ? 5 : (a.getTitle()<b.getTitle()) ? 1 : 0;
-        var b_srtval = (b_hasdcm) ? 9 : (b_hasnii) ? 5 : (a.getTitle()<b.getTitle()) ? 0 : 1;
+        var a_srtval = ((a_hasdcm) ? 9 : 0) + ((a_hasnii) ? 5 : 0) + ((a.getTitle()<b.getTitle()) ? 1 : -1);
+        var b_srtval = ((b_hasdcm) ? 9 : 0) + ((b_hasnii) ? 5 : 0);
         return b_srtval-a_srtval;
     });
 

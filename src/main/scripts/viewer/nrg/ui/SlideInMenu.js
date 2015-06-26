@@ -724,7 +724,7 @@ function(indexOrTitle, opt_deactivateOthers) {
     //
     // Set index, assert value
     //
-    var index = indexOrTitle;
+    var index = (indexOrTitle) ? indexOrTitle : 5;
     if (goog.isString(index)) {
 	if (!this.menuItems_[index]){
 	    throw new Error(index + ' does not exist!');

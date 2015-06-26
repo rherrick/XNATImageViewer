@@ -409,6 +409,7 @@ function(endNodeObj, opt_onNodeAdded, opt_onDone) {
 		opt_onNodeAdded(projNode);
 	    }
 	    this.loadBranch(endNodePath, opt_onNodeAdded, opt_onDone);
+        this.loadProjectResourceFilters();
 	}.bind(this))
 	return;
     }
@@ -478,6 +479,24 @@ function(endNodeObj, opt_onNodeAdded, opt_onDone) {
 }
 
 
+/** 
+ * @public
+ */
+gxnat.ProjectTree.prototype.loadProjectResourceFilters = function() {
+
+    //
+    // Load experiment resource filter object for this project from configuration service
+    //
+    // Example stored JSON:
+    //     "{\"/Structural_preproc/\": [ \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/[^\\\\/]*/\", \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/transforms\\\\/[^\\\\/]*/\" ], \"/^.*_unproc/\": [ \"/.*/\" ] }"
+    //
+    var exptResourceUri = this.Proj_[gxnat.ProjectTree.PATH_KEY]['originalUrl'] + '/config/experimentResources/filters?contents=true';
+    gxnat.get(exptResourceUri, function(filterJSON){
+        this.Proj_['experimentResourceFilters']=filterJSON;
+    }.bind(this),'json');
+
+}
+
 
 /** 
  * @param {!gxnat.Path | !string} projPath The subject path to start the load 
@@ -515,6 +534,7 @@ gxnat.ProjectTree.prototype.loadProject = function(callback) {
 	//
 	this['projects'].push(node);
 	this.Proj_ = node;
+	projNode = node;
 
 	//
 	// Store the node as part of the tree
@@ -534,6 +554,7 @@ gxnat.ProjectTree.prototype.loadProject = function(callback) {
 	//
 	callback(node);
     }.bind(this), '&ID=' + this.initPath_['projects'] + colStr)
+
 }
 
 
@@ -650,7 +671,6 @@ function(opt_onNodeAdded, opt_onDone) {
 
 
     window.console.log('load subjects', subjectsUri, subjUriSuffix);
-
 
     //
     // Query for the subjects within the project

@@ -35,6 +35,7 @@ goog.require('gxnat.vis.AjaxViewableTree');
 goog.require('gxnat.vis.ViewableTree');
 goog.require('gxnat.vis.Scan');
 goog.require('gxnat.vis.Slicer');
+goog.require('gxnat.vis.ExperimentResource');
 
 // xiv
 goog.require('xiv');
@@ -79,6 +80,7 @@ xiv.start = function(xivState, modalState, dataPath, rootUrl){
      */
     this.ViewableTypes_ = {
 	scan: gxnat.vis.Scan,
+	experimentResource: gxnat.vis.ExperimentResource,
 	slicer: gxnat.vis.Slicer,
     }
 
@@ -1123,9 +1125,9 @@ function(ViewableTree, opt_folderList){
 
 
     //
-    // Only add an additional folder if the ViewableTree is a slicer scene
+    // Only add an additional folder if the ViewableTree is a slicer scene (or we're including experiment resources)
     //
-    if (ViewableTree.getCategory() != 'Scans'){
+    if (!(!('experimentResource' in this.ViewableTypes_) && ViewableTree.getCategory() == 'Scans')){
 	opt_folderList.push(ViewableTree.getCategory());
     }
 
@@ -1151,9 +1153,13 @@ function(ViewableTree, opt_folderList){
 		ViewableTree, opt_folderList);
 
 	    //
-	    // Expand any non-scan folders (e.g. Slicer)
+	    // Set the thumbnail's image.
 	    //
-	    if (ViewableTree.getCategory() != 'Scans'){
+	    thumb.setImage(ViewableTree.getThumbnailUrl());
+
+	    //
+	    // Expand folders 
+	    //
 		var folderNodes = ThumbGallery.getZippyTree().
 				   getFolderNodes(opt_folderList);
 		if (opt_folderList.length > 0 && folderNodes.length > 1){
@@ -1161,13 +1167,8 @@ function(ViewableTree, opt_folderList){
 		    ThumbGallery.setExpanded(
 			opt_folderList[opt_folderList.length -1],  
 			folderNodes[folderNodes.length - 2]);
-		}
-	    }
 
-	    //
-	    // Set the thumbnail's image.
-	    //
-	    thumb.setImage(ViewableTree.getThumbnailUrl());
+		}
 	}
     }.bind(this))
 }

@@ -39,9 +39,11 @@ nrg.ui.Thumbnail = function () {
      * @private
      */	
     this.image_ = goog.dom.createDom('img', {
-	'id' : 'nrg.ui.Thumbnail_' + goog.string.createUniqueString()
+   	'id' : 'nrg.ui.Thumbnail_' + goog.string.createUniqueString()
     }); 
-    goog.dom.append(this.getElement(), this.image_);
+    if (this.image_.src!="NONE") {
+        goog.dom.append(this.getElement(), this.image_);
+    }
 
 
     /**
@@ -250,6 +252,18 @@ nrg.ui.Thumbnail.prototype.isActive = function() {
 nrg.ui.Thumbnail.prototype.setImage = function(url){
     this.image_.src = url;
     goog.dom.classes.set(this.image_, nrg.ui.Thumbnail.CSS.IMAGE);
+    if (url=="NONE") {
+        goog.style.setStyle(this.image_,"display","none");
+        goog.style.setStyle(this.getElement(), { "height":"50px",
+                                                 "outline-width":"1px",
+                                                 "outline-style":"solid",
+                                                 "outline-color":"white",
+                                                 "margin-left":"-15px",
+                                                 "width":"110%" });
+        goog.style.setStyle(this.text_, { "height":"20px",
+	                                      "left":"30px" });
+        goog.style.setStyle(this.selectIndicator_, { "display":"none" });
+    }
 };
 
 

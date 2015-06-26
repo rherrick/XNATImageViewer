@@ -420,7 +420,7 @@ xiv.ui.ViewBox.prototype.getViewableGroupMenu =  function() {
  */
 xiv.ui.ViewBox.prototype.highlightFade_ =  function(opt_subtractor) {
 
-    window.console.log("HIGHLIGHT FADE");
+    //window.console.log("HIGHLIGHT FADE");
 
     var timer = new goog.Timer();
     var duration = 200;
@@ -496,7 +496,10 @@ xiv.ui.ViewBox.prototype.getThumbnailLoadTime =  function() {
  * @public
  */
 xiv.ui.ViewBox.prototype.isInUse =  function() {
-    return goog.isDefAndNotNull(this.thumbLoadTime_);
+    return goog.isDefAndNotNull(this.thumbLoadTime_) || ((goog.isDefAndNotNull(this.ViewableGroupMenu_) && 
+                        goog.isDefAndNotNull(this.ViewableGroupMenu_.getElement()) && 
+                        !(this.ViewableGroupMenu_.getElement().style.visibility=="hidden")) &&
+                        !this.inUseDialog_);
 }
 
 
@@ -972,41 +975,43 @@ xiv.ui.ViewBox.prototype.loadViewableTree_ = function(ViewableTree){
     var viewGroups = ViewableTree.getViewableGroups();
     var thumb = null;
     if (viewGroups.length > 1){
-	//window.console.log("TOTAL VIEW GROUPS", viewGroups.length);
-	
-	//
-	// Add a thumbnail to the ViewableGroup Menu based on the ViewGroup
-	//
-	goog.array.forEach(viewGroups, function(viewGroup, i){
+    	//window.console.log("TOTAL VIEW GROUPS", viewGroups.length);
+    	
+    	//
+    	// Add a thumbnail to the ViewableGroup Menu based on the ViewGroup
+    	//
+    	goog.array.forEach(viewGroups, function(viewGroup, i){
+    
+            //window.console.log("VG", viewGroup.getThumbnailUrl());
+            thumb = this.ViewableGroupMenu_.createAndAddThumbnail(
+        	viewGroup.getThumbnailUrl(), viewGroup.getTitle() || i);
+       
+       	    //
+       	    // Apply the UID to the thumb
+       	    //
+    	    this.ViewableGroups_[goog.getUid(thumb)] = viewGroup;	
 
-	    //window.console.log("VG", viewGroup.getThumbnailUrl());
-	    thumb = this.ViewableGroupMenu_.createAndAddThumbnail(
-		viewGroup.getThumbnailUrl(), viewGroup.getTitle() || i);
-
-	    //
-	    // Apply the UID to the thumb
-	    //
-	    this.ViewableGroups_[goog.getUid(thumb)] = viewGroup;	
-	}.bind(this))
-	//
-	// Hide the progress bar
-	//
-	this.hideSubComponent_(this.ProgressBarPanel_, 0);
-
-	//
-	// Show the Viewable group menu
-	//
-	this.showSubComponent_(this.ViewableGroupMenu_, 200);
-	if (viewGroups[0].getCategory()=="scans") {
-		$("." + xiv.ui.ViewableGroupMenu.CSS.HEADER).html("<b> Select catalog or volume </b>");
-	}
-    }
-    else {
-
-	//
-	// Otherwise just load the individual group
-	//
-	this.load(viewGroups[0], false);
+    	}.bind(this))
+    	//
+    	// Hide the progress bar
+    	//
+    	this.hideSubComponent_(this.ProgressBarPanel_, 0);
+    
+    	//
+    	// Show the Viewable group menu
+    	//
+    	this.showSubComponent_(this.ViewableGroupMenu_, 200);
+        this.isRendering_ = false;
+    	if (viewGroups[0].getCategory()=="scans") {
+    		$("." + xiv.ui.ViewableGroupMenu.CSS.HEADER).html("<b> Select catalog or volume </b>");
+    	} else if (viewGroups[0].getCategory()=="experimentResources") {
+    		$("." + xiv.ui.ViewableGroupMenu.CSS.HEADER).html("<b> Select volume </b>");
+    	}
+    } else {
+    	//
+    	// Otherwise just load the individual group
+    	//
+    	this.load(viewGroups[0], false);
     }
 }
 
@@ -1093,11 +1098,13 @@ function(ViewableSet, opt_initLoadComponents) {
     // Prompt user if the ViewBox is In Use
     //
     if (this.isInUse() && (!(this.ViewableTrees_.length>0 && ViewableSet==this.ViewableTrees_[0]))){
-	this.showInUseDialog(function(){
-	    this.clearThumbnailLoadTime();	    
-	    reload();
-	}.bind(this))
-	return false;
+    	this.showInUseDialog(function(){
+    	    this.clearThumbnailLoadTime();	    
+            this.inUseDialog_=true;
+    	    reload();
+            this.inUseDialog_=false;
+    	}.bind(this))
+    	return false;
     }
     return true;
 }
@@ -1303,9 +1310,11 @@ xiv.ui.ViewBox.prototype.inventoryViewables_ = function(ViewableSet){
 	//
 	var viewables = ViewableSet.getViewables();
 	goog.array.forEach(viewables, function(viewable){
-	    if (goog.isDefAndNotNull(
-		viewable.getRenderProperties()['labelMapFile'])){
-		this.totalViewables_++;
+		if (goog.isDefAndNotNull(viewable.getRenderProperties())) {
+    	    if (goog.isDefAndNotNull(
+    		    viewable.getRenderProperties()['labelMapFile'])){
+    		    this.totalViewables_++;
+    	    }
 	    }
 	}.bind(this))
 } 

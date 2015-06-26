@@ -43,9 +43,9 @@ function(category,  opt_viewableJson, opt_experimentUrl) {
 
 	this.experimentUrl = opt_experimentUrl;   
 
-	this.queryUrl = gxnat.Path.graftUrl(this.experimentUrl, 
+	this.queryUrl = (category!="ExperimentResources") ? gxnat.Path.graftUrl(this.experimentUrl, 
 					    opt_viewableJson['URI'], 
-					    'experiments');
+					    'experiments') : this.experimentUrl + "/resources/" + opt_viewableJson['xnat_abstractresource_id'];
 
 	this.Path = new gxnat.Path(this.queryUrl);
     }

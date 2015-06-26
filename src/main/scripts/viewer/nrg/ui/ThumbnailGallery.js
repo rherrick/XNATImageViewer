@@ -291,15 +291,10 @@ nrg.ui.ThumbnailGallery.prototype.createThumbnail = function(imageUrl,
 			       goog.dom.classes.get(thumbnail.getTextElement()), 
 			       this.thumbnailTextClasses_);
     goog.dom.classes.addRemove(thumbnail.getImage(), 
-			       goog.dom.classes.get(thumbnail.getImage()), 
-			       this.thumbnailImageClasses_);
-
+   			       goog.dom.classes.get(thumbnail.getImage()), 
+   			       this.thumbnailImageClasses_);
     thumbnail.setImage(imageUrl);
     thumbnail.setText(displayText);
-
-
-
-
 
     return thumbnail;
         
