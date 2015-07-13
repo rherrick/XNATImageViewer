@@ -490,7 +490,7 @@ gxnat.ProjectTree.prototype.loadProjectResourceFilters = function() {
     // Example stored JSON:
     //     "{\"/Structural_preproc/\": [ \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/[^\\\\/]*/\", \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/transforms\\\\/[^\\\\/]*/\" ], \"/^.*_unproc/\": [ \"/.*/\" ] }"
     //
-    var exptResourceUri = this.Proj_[gxnat.ProjectTree.PATH_KEY]['originalUrl'] + '/config/experimentResources/filters?contents=true';
+    var exptResourceUri = this.Proj_[gxnat.ProjectTree.PATH_KEY]['originalUrl'] + '/config/XImgView/experimentResources/filters?contents=true';
     gxnat.get(exptResourceUri, function(filterJSON){
         this.Proj_['experimentResourceFilters']=filterJSON;
     }.bind(this),'json');

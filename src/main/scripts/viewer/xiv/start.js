@@ -1082,6 +1082,7 @@ function(folders, opt_correspondingData){
 	    }
 	}
     }.bind(this))
+
 }
 
 
@@ -1169,7 +1170,18 @@ function(ViewableTree, opt_folderList){
 			folderNodes[folderNodes.length - 2]);
 
 		}
-	}
+	} else {
+        var zippyTree = this.Modal_.getThumbnailGallery().getZippyTree();
+        if (goog.isDefAndNotNull(opt_folderList)) {
+            var tZippyNodes = zippyTree.getFolderNodes(opt_folderList);
+            for (var i=tZippyNodes.length;i>=0;i--) {
+                if (tZippyNodes[i]!=undefined) {
+                    zippyTree.setLoadingIndicatorToNoFileIndicator(tZippyNodes[tZippyNodes.length-i],null);
+                    continue;
+                }
+            }
+        }
+    }
     }.bind(this))
 }
 

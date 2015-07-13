@@ -346,14 +346,27 @@ nrg.ui.ZippyNode.prototype.hasLoadingIndicator = function(){
  */
 nrg.ui.ZippyNode.prototype.loadingIndicatorRemoving_ = false;
 
-
-
 /**
  * @return {!boolean}
  * @public
  */
 nrg.ui.ZippyNode.prototype.loadingIndicatorRemoving = function(){
     return this.loadingIndicatorRemoving_;
+}
+
+/**
+ * @type {!boolean}
+ * @private
+ */
+nrg.ui.ZippyNode.prototype.loadingIndicatorNoFiles_ = false;
+
+
+/**
+ * @return {!boolean}
+ * @public
+ */
+nrg.ui.ZippyNode.prototype.loadingIndicatorNoFiles = function(){
+    return this.loadingIndicatorNoFiles_;
 }
 
 
@@ -385,6 +398,23 @@ function(opt_fadeOut, opt_onFadeOutEnd){
     removeLI();
 }
 
+
+/**
+ * @public
+ */
+nrg.ui.ZippyNode.prototype.setLoadingIndicatorNoFiles = 
+function(opt_fadeOut, opt_onFadeOutEnd){
+
+    this.loadingIndicatorNoFiles_ = true;
+    setTimeout(function(){
+        goog.dom.removeChildren(this.loadingIndicator_)
+        var loadingText = goog.dom.createDom('div');
+        goog.dom.classes.add(loadingText, 
+    			nrg.ui.ZippyNode.CSS.LOADING_TEXT);
+        loadingText.innerHTML = '<span style="margin:-50px">No image files found for this experiment.</span>';
+        goog.dom.append(this.loadingIndicator_, loadingText);
+    }.bind(this),2500);
+}
 
 
 /**
@@ -420,6 +450,7 @@ function() {
     this.loadingIndicator_.style.opacity = 0;
     nrg.fx.fadeIn(this.loadingIndicator_, 300);
     this.loadingIndicatorRemoving_ = false;
+    this.loadingIndicatorNoFiles_ = false;
 }
 
 
@@ -757,5 +788,9 @@ goog.exportSymbol('nrg.ui.ZippyNode.prototype.removeLoadingIndicator',
 	nrg.ui.ZippyNode.prototype.removeLoadingIndicator);
 goog.exportSymbol('nrg.ui.ZippyNode.prototype.loadingIndicatorRemoving',
 	nrg.ui.ZippyNode.prototype.loadingIndicatorRemoving);
+goog.exportSymbol('nrg.ui.ZippyNode.prototype.setLoadingIndicatorNoFiles',
+	nrg.ui.ZippyNode.prototype.setLoadingIndicatorNoFiles);
+goog.exportSymbol('nrg.ui.ZippyNode.prototype.loadingIndicatorNoFiles',
+	nrg.ui.ZippyNode.prototype.loadingIndicatorNoFiles);
 goog.exportSymbol('nrg.ui.ZippyNode.prototype.disposeInternal',
 	nrg.ui.ZippyNode.prototype.disposeInternal);

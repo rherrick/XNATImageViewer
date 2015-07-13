@@ -1009,7 +1009,7 @@ nrg.ui.ZippyTree.prototype.onEndOfBranch_ = function(parentNode, opt_elt) {
 	    parentNode.removeLoadingIndicator(true);
 		return;
     } else if (!(parentNode.getTitle().indexOf("EXPERIMENTS")>=0)) {
-		this.findAndRemoveLoadingIndicator_(this,parentNode);
+		this.findAndRemoveLoadingIndicator(this,parentNode);
 	}
 
     //
@@ -1022,26 +1022,67 @@ nrg.ui.ZippyTree.prototype.onEndOfBranch_ = function(parentNode, opt_elt) {
  * The loading indicator may not always be at the parent node (it's at the experiment node).  It may be one level further down.
  * 
  * @param {!Element} contentHolder
- * @private
+ * @public
  */
-nrg.ui.ZippyTree.prototype.findAndRemoveLoadingIndicator_ = function(startingPoint,parentNode) {
-	for (var node in startingPoint.Nodes_) {
-		if (startingPoint.Nodes_.hasOwnProperty(node)) {
-			if (startingPoint.Nodes_[node].getTitle().indexOf("EXPERIMENTS")>=0) { 
-				for (var innerNode in startingPoint.Nodes_[node].Nodes_) {
-					if (startingPoint.Nodes_[node].Nodes_.hasOwnProperty(innerNode)) {
-						if (startingPoint.Nodes_[node].Nodes_[innerNode]==parentNode) {
-							if (startingPoint.Nodes_[node].hasLoadingIndicator() && !startingPoint.Nodes_[node].loadingIndicatorRemoving()) {
-								startingPoint.Nodes_[node].removeLoadingIndicator(true);
-							}
-							return;
-						}
-					}
-				}
-			} else {
-				this.findAndRemoveLoadingIndicator_(startingPoint.Nodes_[node],parentNode);
-			}
-		}
+nrg.ui.ZippyTree.prototype.findAndRemoveLoadingIndicator = function(startingPoint,parentNode) {
+    if (goog.isDefAndNotNull(startingPoint)) {
+        if (goog.isDefAndNotNull(startingPoint.Nodes_)) {
+        	for (var node in startingPoint.Nodes_) {
+        		if (startingPoint.Nodes_.hasOwnProperty(node)) {
+        			if (startingPoint.Nodes_[node].getTitle().indexOf("EXPERIMENTS")>=0) { 
+        				for (var innerNode in startingPoint.Nodes_[node].Nodes_) {
+        					if (startingPoint.Nodes_[node].Nodes_.hasOwnProperty(innerNode)) {
+        						if (startingPoint.Nodes_[node].Nodes_[innerNode]==parentNode) {
+        							if (startingPoint.Nodes_[node].hasLoadingIndicator() && !startingPoint.Nodes_[node].loadingIndicatorRemoving()) {
+        								startingPoint.Nodes_[node].removeLoadingIndicator(true);
+        							}
+        							return;
+        						}
+        					}
+        				}
+        			} else {
+        				this.findAndRemoveLoadingIndicator(startingPoint.Nodes_[node],parentNode);
+        			}
+        		}
+        	}
+     	}
+        if (startingPoint.hasLoadingIndicator() && !startingPoint.loadingIndicatorRemoving()) {
+    	    startingPoint.removeLoadingIndicator(true);
+        }
+	}
+}
+
+/**
+ * The loading indicator may not always be at the parent node (it's at the experiment node).  It may be one level further down.
+ * 
+ * @param {!Element} contentHolder
+ * @public
+ */
+nrg.ui.ZippyTree.prototype.setLoadingIndicatorToNoFileIndicator = function(startingPoint,parentNode) {
+    if (goog.isDefAndNotNull(startingPoint)) {
+        if (goog.isDefAndNotNull(startingPoint.Nodes_)) {
+        	for (var node in startingPoint.Nodes_) {
+        		if (startingPoint.Nodes_.hasOwnProperty(node)) {
+        			if (startingPoint.Nodes_[node].getTitle().indexOf("EXPERIMENTS")>=0) { 
+        				for (var innerNode in startingPoint.Nodes_[node].Nodes_) {
+        					if (startingPoint.Nodes_[node].Nodes_.hasOwnProperty(innerNode)) {
+        						if (startingPoint.Nodes_[node].Nodes_[innerNode]==parentNode) {
+        							if (startingPoint.Nodes_[node].hasLoadingIndicator() && !startingPoint.Nodes_[node].loadingIndicatorNoFiles()) {
+        								startingPoint.Nodes_[node].setLoadingIndicatorNoFiles(true);
+        							}
+        							return;
+        						}
+        					}
+        				}
+        			} else {
+        				this.findAndRemoveLoadingIndicator(startingPoint.Nodes_[node],parentNode);
+        			}
+        		}
+        	}
+     	}
+        if (startingPoint.hasLoadingIndicator() && !startingPoint.loadingIndicatorNoFiles()) {
+    	    startingPoint.setLoadingIndicatorNoFiles(true);
+        }
 	}
 }
 
@@ -1185,6 +1226,10 @@ goog.exportSymbol('nrg.ui.ZippyTree.prototype.contractAll',
 	nrg.ui.ZippyTree.prototype.contractAll);
 goog.exportSymbol('nrg.ui.ZippyTree.prototype.collapseAll',
 	nrg.ui.ZippyTree.prototype.collapseAll);
+goog.exportSymbol('nrg.ui.ZippyTree.prototype.findAndRemoveLoadingIndicator',
+	nrg.ui.ZippyTree.prototype.findAndRemoveLoadingIndicator);
+goog.exportSymbol('nrg.ui.ZippyTree.prototype.setLoadingIndicatorToNoFileIndicator',
+	nrg.ui.ZippyTree.prototype.setLoadingIndicatorToNoFileIndicator);
 goog.exportSymbol('nrg.ui.ZippyTree.prototype.getAllNodes',
 	nrg.ui.ZippyTree.prototype.getAllNodes);
 goog.exportSymbol('nrg.ui.ZippyTree.prototype.getTopLevelNodes',
