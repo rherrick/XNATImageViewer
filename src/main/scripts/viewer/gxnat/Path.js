@@ -28,6 +28,7 @@ gxnat.Path = function(url){
     this['experiments'] = null;
     this['scans'] = null;
     this['resources'] = null;
+    this['reconstructions'] = null;
     this['files'] = null;
 
     this.deconstructUrl_(url);
@@ -110,7 +111,7 @@ gxnat.Path.graftUrl = function(prefixUrl, suffixUrl, graftSubString){
 	throw new Error('Graft folder', graftSubString, 'not in prefix:', 
 			prefixUrl)
     }
-    if (prefixUrl.indexOf(graftSubString) == -1){
+    if (suffixUrl.indexOf(graftSubString) == -1){
 	throw new Error('Graft folder', graftSubString, 'not in suffix:', 
 			suffixUrl)
     }
@@ -130,7 +131,7 @@ gxnat.Path.xnatLevelOrder = [
     'projects',
     'subjects',
     'experiments',
-    ['scans', 'resources'],
+    ['scans', 'resources', 'reconstructions'],
     'files'
 ]
 

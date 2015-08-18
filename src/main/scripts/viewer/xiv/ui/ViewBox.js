@@ -589,9 +589,10 @@ xiv.ui.ViewBox.prototype.onRendering_ = function(e){
 	     var incr = 1/this.totalViewables_;
 	     var done = incr * this.totalRenderedObjects_ + e.value * incr;
 
-	   	if (this.previousProgressBarValue_ < e.value){  
+       //KA - commenting this out shows progress bar progress when loading non-DICOM files
+	     //if (this.previousProgressBarValue_ < e.value){  
 		    this.setProgressBarPct_(done + e.value * incr);
-		}
+       //}
 	 }
 
 	//if (done){

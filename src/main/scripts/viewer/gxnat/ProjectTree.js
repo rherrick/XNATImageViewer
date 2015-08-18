@@ -410,6 +410,7 @@ function(endNodeObj, opt_onNodeAdded, opt_onDone) {
 	    }
 	    this.loadBranch(endNodePath, opt_onNodeAdded, opt_onDone);
         this.loadProjectResourceFilters();
+        this.loadProjectReconstructionFilters();
 	}.bind(this))
 	return;
     }
@@ -493,6 +494,24 @@ gxnat.ProjectTree.prototype.loadProjectResourceFilters = function() {
     var exptResourceUri = this.Proj_[gxnat.ProjectTree.PATH_KEY]['originalUrl'] + '/config/XImgView/experimentResources/filters?contents=true';
     gxnat.get(exptResourceUri, function(filterJSON){
         this.Proj_['experimentResourceFilters']=filterJSON;
+    }.bind(this),'json');
+
+}
+
+/** 
+ * @public
+ */
+gxnat.ProjectTree.prototype.loadProjectReconstructionFilters = function() {
+
+    //
+    // Load experiment resource filter object for this project from configuration service
+    //
+    // Example stored JSON:
+    //     "{\"/Structural_preproc/\": [ \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/[^\\\\/]*/\", \"/^.*\\\\/T1w\\\\/[^\\\\/]*\\\\/mri\\\\/transforms\\\\/[^\\\\/]*/\" ], \"/^.*_unproc/\": [ \"/.*/\" ] }"
+    //
+    var exptResourceUri = this.Proj_[gxnat.ProjectTree.PATH_KEY]['originalUrl'] + '/config/XImgView/experimentReconstructions/filters?contents=true';
+    gxnat.get(exptResourceUri, function(filterJSON){
+        this.Proj_['experimentReconstructionFilters']=filterJSON;
     }.bind(this),'json');
 
 }

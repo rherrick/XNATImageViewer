@@ -36,6 +36,7 @@ goog.require('gxnat.vis.ViewableTree');
 goog.require('gxnat.vis.Scan');
 goog.require('gxnat.vis.Slicer');
 goog.require('gxnat.vis.ExperimentResource');
+goog.require('gxnat.vis.ExperimentReconstruction');
 
 // xiv
 goog.require('xiv');
@@ -81,6 +82,7 @@ xiv.start = function(xivState, modalState, dataPath, rootUrl){
     this.ViewableTypes_ = {
 	scan: gxnat.vis.Scan,
 	experimentResource: gxnat.vis.ExperimentResource,
+	experimentReconstruction: gxnat.vis.ExperimentReconstruction,
 	slicer: gxnat.vis.Slicer,
     }
 
@@ -1128,7 +1130,7 @@ function(ViewableTree, opt_folderList){
     //
     // Only add an additional folder if the ViewableTree is a slicer scene (or we're including experiment resources)
     //
-    if (!(!('experimentResource' in this.ViewableTypes_) && ViewableTree.getCategory() == 'Scans')){
+    if (!(!('experimentResource' in this.ViewableTypes_) && !('experimentReconstruction' in this.ViewableTypes_) && ViewableTree.getCategory() == 'Scans')){
 	opt_folderList.push(ViewableTree.getCategory());
     }
 
