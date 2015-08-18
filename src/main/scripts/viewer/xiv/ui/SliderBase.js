@@ -370,7 +370,8 @@ xiv.ui.SliderBase.prototype.refresh = function() {
     this.refreshCount_++;
     // NOTE:  This value set to 50 for Firefox.  Could be set higher for other browsers 
     // (120 for IE, 200 or more for Chrome), but it seems to have no impact.
-    if (this.refreshCount_<50) {
+    // KA: testing with very low value to speed up loading -- seems to have no effect NOT WELL UNDERSTOOD, though
+    if (this.refreshCount_<5) {
         var oldValue = this.slider.getValue();
         if (this.slider instanceof nrg.ui.Component){
     	this.slider.updateStyle();
@@ -378,7 +379,7 @@ xiv.ui.SliderBase.prototype.refresh = function() {
         this.slider.setValue(0);
         this.slider.setValue(oldValue);
         this.syncInputToSlider(this.valueInput);
-    } else if (this.refreshCount_==50) {
+    } else if (this.refreshCount_==5) {
         window.console.log("NOTE:  Slider refresh limit reached (prevent stack overflow)");
         // Return refreshcount back to zero (after allowing time for loading) to allow user 
         // to interact with the sliders and refresh as normal.
