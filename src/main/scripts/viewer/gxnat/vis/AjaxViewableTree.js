@@ -44,8 +44,8 @@ function(category,  opt_viewableJson, opt_experimentUrl) {
 	this.experimentUrl = opt_experimentUrl;   
 
 	this.queryUrl = (category!="ExperimentResources") ? gxnat.Path.graftUrl(this.experimentUrl, 
-					    opt_viewableJson['URI'], 
-					    'experiments') : this.experimentUrl + "/resources/" + opt_viewableJson['xnat_abstractresource_id'];
+			    opt_viewableJson['URI'], 
+			    'experiments') : this.experimentUrl + "/resources/" + opt_viewableJson['xnat_abstractresource_id'];
 
 	this.Path = new gxnat.Path(this.queryUrl);
     }
@@ -125,24 +125,45 @@ gxnat.vis.AjaxViewableTree.FILE_SIZE_KEY = 'Size'
  * @public
  */
 gxnat.vis.AjaxViewableTree.loopFolderContents = 
-function(viewableFolderUrl, runCallback, opt_doneCallback) {
-    gxnat.jsonGet(viewableFolderUrl, function(viewablesJson){
-	
+function(viewableFolderUrl, AjaxViewableTreeSubClass, runCallback, opt_doneCallback) {
+
+    var restColumns = AjaxViewableTreeSubClass.prototype.restColumns;
+    var columnsVar = (typeof restColumns !== 'undefined' && restColumns.length > 0) ? ('?columns=' + restColumns) : '';
+
+    gxnat.jsonGet(viewableFolderUrl + columnsVar, function(viewablesJson){
 	if (!goog.isArray(viewablesJson)) {
 	    //runCallback(viewablesJson);
 	    //return;
 	}
-	goog.array.forEach(viewablesJson, function(viewable){
-	    //window.console.log("VIEWABLE:", viewable);
-	    runCallback(viewable)
-	})
-	if (opt_doneCallback){
-	    //window.console.log("done callback", opt_doneCallback);
-	    opt_doneCallback();
-	}
+	AjaxViewableTreeSubClass.prototype.populateRestDataObject(viewablesJson,viewableFolderUrl,function(){
+		goog.array.forEach(viewablesJson, function(viewable){
+		    //window.console.log("VIEWABLE:", viewable);
+		    runCallback(viewable)
+		})
+		if (opt_doneCallback){
+		    //window.console.log("done callback", opt_doneCallback);
+		    opt_doneCallback();
+		}
+	});
     })
 }
 
+
+/**
+ * This method is meant to be overriden to allow the ViewableType to make an efficient set of rest calls to produce a 
+ * data object that can be accessed by instances, rather than those instances make individual REST calls to 
+ * populate its data
+ * @param {!array} viewablesJson - The json returned from viewableFolderUrl
+ * @param {!string} viewableFolderUrl - The url of the viewable folders
+ * @param {!Function} runCallback.  The callback to apply.
+ */
+gxnat.vis.AjaxViewableTree.prototype.populateRestDataObject = function(viewablesJson,viewableFolderUrl,runCallback) { runCallback(); };
+
+/**
+ * Columns to request when making REST calls (value of columns parameter, to request specific metadata)
+ * @type {!string}
+ */
+gxnat.vis.AjaxViewableTree.prototype.restColumns = '';
 
 
 /**
@@ -504,8 +525,8 @@ function(url, AjaxViewableTreeSubClass, opt_runCallback, opt_doneCallback) {
     var queryFolder = 
     url + '/' + AjaxViewableTreeSubClass.prototype.getFolderQuerySuffix();
     var viewable = null;
-    //window.console.log('\n\n\nurl:', url, '\nqueryFolder:', queryFolder);
-    gxnat.vis.AjaxViewableTree.loopFolderContents(queryFolder, function(json){
+    window.console.log('getViewableTrees   \n\n\nurl:', url, '\nqueryFolder:', queryFolder);
+    gxnat.vis.AjaxViewableTree.loopFolderContents(queryFolder, AjaxViewableTreeSubClass, function(json){
 	//window.console.log(json, pathObj);
 	viewable = new AjaxViewableTreeSubClass(
 	     json, pathObj.pathByLevel('experiments'), opt_runCallback);
@@ -568,6 +589,10 @@ goog.exportSymbol('gxnat.vis.AjaxViewableTree.loopFolderContents',
 	gxnat.vis.AjaxViewableTree.loopFolderContents);
 goog.exportSymbol('gxnat.vis.AjaxViewableTree.getViewableTrees',
 	gxnat.vis.AjaxViewableTree.getViewableTrees);
+goog.exportSymbol('gxnat.vis.AjaxViewableTree.prototype.populateRestDataObject',
+	gxnat.vis.AjaxViewableTree.prototype.populateRestDataObject);
+goog.exportSymbol('gxnat.vis.AjaxViewableTree.prototype.restColumns',
+	gxnat.vis.AjaxViewableTree.prototype.restColumns);
 goog.exportSymbol('gxnat.vis.AjaxViewableTree.prototype.filesGotten',
 	gxnat.vis.AjaxViewableTree.prototype.filesGotten);
 goog.exportSymbol('gxnat.vis.AjaxViewableTree.prototype.setFileMetadata',

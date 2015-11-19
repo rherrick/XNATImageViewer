@@ -87,6 +87,38 @@ gxnat.vis.Scan.acceptableFileTypes = [
     'nii',
 ]
 
+/**
+ * Columns to request when making REST calls (value of columns parameter, to request specific metadata)
+ * @type {!string}
+ */
+gxnat.vis.Scan.prototype.restColumns = 'ID,URI,quality,series_description,type,xnat_imagescandata_id,xsiType,xnat:mrscandata/parameters/orientation,frames,xnat:mrscandata/parameters/acqType';
+
+
+/**
+ * @private
+ */
+gxnat.vis.Scan.restDataObject;
+
+
+/**
+ * @override
+ * @param {!array} viewablesJson - The json returned from viewableFolderUrl
+ * @param {!string} viewableFolderUrl - The url of the viewable folders
+ * @param {!Function} runCallback.  The callback to apply.
+ */
+gxnat.vis.Scan.prototype.populateRestDataObject = function(viewablesJson,viewableFolderUrl,runCallback) {
+	var scanIds = '';
+	gxnat.vis.Scan.restDataObject = { viewables:viewablesJson };
+	goog.array.forEach(viewablesJson,function(viewableJson,i){
+		if (typeof viewableJson.ID !== 'undefined' && viewableJson.ID != '') {
+			scanIds+=(viewableJson.ID + ((i<viewablesJson.length-1) ? ',' : ''));
+		}
+	});
+    	gxnat.jsonGet(viewableFolderUrl + '/' + scanIds + '/files?format=json', function(filesJson){ 
+		gxnat.vis.Scan.restDataObject.files = filesJson;
+		runCallback();
+	});
+} 
 
 
 /**
@@ -157,10 +189,10 @@ gxnat.vis.Scan.prototype.setViewableMetadata = function(){
     //
     // Orientation
     //
-    if (goog.isDefAndNotNull(this.scanMetadata_['parameters/orientation'])){
+    if (goog.isDefAndNotNull(this.scanMetadata_['xnat:mrscandata/parameters/orientation'])){
     this.sessionInfo['Orientation'] = 
         this.getOrientationFromAbbreviation_(
-        this.scanMetadata_['parameters/orientation']);
+        this.scanMetadata_['xnat:mrscandata/parameters/orientation']);
 
     //
     // Store the orientation as a property
@@ -171,8 +203,8 @@ gxnat.vis.Scan.prototype.setViewableMetadata = function(){
     //
     // Acq. Type
     //
-    if (goog.isDefAndNotNull(this.scanMetadata_['parameters/acqType'])){
-    this.sessionInfo['Acq. Type'] = this.scanMetadata_['parameters/acqType']
+    if (goog.isDefAndNotNull(this.scanMetadata_['xnat:mrscandata/parameters/acqtype'])){
+    this.sessionInfo['Acq. Type'] = this.scanMetadata_['xnat:mrscandata/parameters/acqtype']
     }
 }
 
@@ -190,7 +222,6 @@ gxnat.vis.Scan.prototype.getFileList = function(callback){
     return;
     }
 
-
     //--------------------------
     //
     // IMPORTANT!! PLEASE READ!!
@@ -200,32 +231,47 @@ gxnat.vis.Scan.prototype.getFileList = function(callback){
     // We first query for the scan's metadata, and then we call the superclass
     // 'getFileList' to query for the actual file list.
     //
+    // MRH:  With the addition of gxnat.vis.Scan.prototype.restColumns, we expect not to have to issue separate queries to get the metadata 
     //--------------------------
-
 
     //
     // Get the scan metadata first
     //
-    gxnat.jsonGet(this.Path['originalUrl'], function(scanMetadata) {
-    //
-    // Store the metadata
-    //
-    this.scanMetadata_ = scanMetadata['items'][0]['data_fields'];
-    //window.console.log("SCAN JSON2", this.scanMetadata_);
-    
+    this.scanMetadata_ = this.json;
     //
     // set the metadata
     //
     this.setViewableMetadata();
 
-    //
-    // Call superclass
-    //
-    gxnat.vis.Scan.superClass_.getFileList.call(this, function(){
-        this.getThumbnailImage();
-        callback();
+    var fileQueryUrl = this.queryUrl + this.fileQuerySuffix;
+    var absoluteUrl = '';    
+    var fileUrl = '';
+    var fileMetadata;
+
+    goog.array.forEach(gxnat.vis.Scan.restDataObject.viewables,function(viewable){
+	var len = gxnat.vis.Scan.restDataObject.files.length;
+	if (viewable.ID!=this.json.ID) {
+		return;
+	}
+	for (var i=0; i<len; i++) {
+	    fileMetadata = gxnat.vis.Scan.restDataObject.files[i];
+	    var scanID = fileMetadata.URI.substring(fileMetadata.URI.indexOf("scans/")+6);
+	    scanID = scanID.substring(0,scanID.indexOf("/"));
+	    if (scanID!=viewable.ID) {
+		continue;
+	    }
+	    fileUrl = this.makeFileUrl(fileMetadata);
+	    //window.console.log("ABSOLUTE URL:", 
+	    //fileMetadataArray[i], fileUrl); 
+	    if (fileUrl) { 
+		this.setFileMetadata(fileUrl, fileMetadata)
+		this.addFiles(fileUrl, this.fileFilter);
+	    }
+	}
+	this.getThumbnailImage();
+	callback();
+	this.filesGotten = true;
     }.bind(this));
-    }.bind(this))
 
 }
 
@@ -261,6 +307,12 @@ gxnat.vis.Scan.prototype.getGroupForFileCreateIfNecessary = function(fileName) {
     // We'll create a group for each resource if DICOM and each NIFTI file if NIFTI.
     var nameParts = fileName.split("/");
     for (var i=0;i<nameParts.length;i++) {
+        if (nameParts[i]=="scans") {
+            var scanStr = nameParts[i+1];
+            if (scanStr!=this.json.ID) {
+            	return;
+            }
+        }
         if (nameParts[i]=="resources") {
             var resourceStr = nameParts[i+1];
             if (goog.string.caseInsensitiveContains(nameParts[nameParts.length-1],"nii")) {
@@ -281,31 +333,23 @@ gxnat.vis.Scan.prototype.getGroupForFileCreateIfNecessary = function(fileName) {
     newGroup.setSourceInfo(resourceStr);
     newGroup.setTitle(resourceStr);
     newGroup.setCategory('scans');
-    gxnat.get(fileName.replace(/\/files\/.*$/,"?format=xml"),function(returnedXmlStr){
-        try {
-            var resourceXml = goog.dom.xml.loadXml(returnedXmlStr);
-            var catTags = resourceXml.getElementsByTagName("Catalog");
-            var dcmCatTags = resourceXml.getElementsByTagName("DCMCatalog");
-            // NOTE:  IE seems to be having issues parsing the catalog XML.  Parse manually if necessary
-            if ((catTags == undefined || catTags.length<1) && (dcmCatTags == undefined || dcmCatTags.length<1)) {
-                if (returnedXmlStr.indexOf("DCMCatalog")>=0) {
-                    newGroup.setTitle("DICOM" + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
-                } else if (returnedXmlStr.indexOf("Catalog ID=")>=0) {
-                    var resourceID = returnedXmlStr.replace(/(\r\n|\n|\r)/gm,"").replace(/^.*Catalog ID=\\*"/,"").replace(/\\*".*$/,"");
-                    if (resourceID.length>0 && resourceID.indexOf("<")<0) {
-                       newGroup.setTitle(resourceID + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
-                    }
-                }
-            } else if (dcmCatTags.length>0) {
-                newGroup.setTitle("DICOM" + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
-            } else if (catTags.length>0) {
-                var resourceID = catTags[0].attributes.getNamedItem("ID").nodeValue;
-                newGroup.setTitle(resourceID + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
-            }
-        } catch (e) {
-            newGroup.setTitle(resourceStr);
-        }
-    }, 'text');
+    var match = false;
+    goog.array.some(gxnat.vis.Scan.restDataObject.files,function(fileObj){
+    	var compareVal = fileName.substring(fileName.indexOf('scans/')+6);
+    	if (compareVal == fileObj.URI.substring(fileObj.URI.indexOf('scans/')+6)) {
+                    if (fileObj.collection.indexOf("DCMCatalog")>=0) {
+                        newGroup.setTitle("DICOM" + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
+    		} else {
+                        newGroup.setTitle(fileObj.collection + ((resourceStr.indexOf('-')>0) ? resourceStr.substring(resourceStr.indexOf('-')-1) : ""));
+    		} 
+    		match = true;
+    		return true;
+    	}
+    	return false;
+    });
+    if (!match) {
+          newGroup.setTitle(resourceStr);
+    }
     this.ViewableGroups.push(newGroup);
     return newGroup;
 }
@@ -323,8 +367,11 @@ gxnat.vis.Scan.prototype.addFiles = function(fileNames) {
             return;
         }
         var vGroup = this.getGroupForFileCreateIfNecessary(currFile);    
+        if (vGroup==undefined) {
+            return;
+	}
         if (vGroup.getViewables().length == 0){
-    vGroup.addViewable(new gxnat.vis.Viewable());
+            vGroup.addViewable(new gxnat.vis.Viewable());
         }
         vGroup.getViewables()[0].addFiles(fileNames, this.fileFilter);
     }, this);
@@ -450,6 +497,10 @@ gxnat.vis.Scan.prototype.dispose = function(){
 
 goog.exportSymbol('gxnat.vis.Scan.acceptableFileTypes',
     gxnat.vis.Scan.acceptableFileTypes);
+goog.exportSymbol('gxnat.vis.Scan.prototype.restColumns',
+    gxnat.vis.Scan.prototype.restColumns);
+goog.exportSymbol('gxnat.vis.Scan.prototype.populateRestDataObject',
+    gxnat.vis.Scan.prototype.populateRestDataObject);
 goog.exportSymbol('gxnat.vis.Scan.prototype.folderQuerySuffix',
     gxnat.vis.Scan.prototype.folderQuerySuffix);
 goog.exportSymbol('gxnat.vis.Scan.prototype.fileQuerySuffix',

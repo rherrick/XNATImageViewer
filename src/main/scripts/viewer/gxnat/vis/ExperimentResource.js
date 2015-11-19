@@ -66,6 +66,47 @@ gxnat.vis.ExperimentResource.acceptableFileTypes = [
     'nii',
 ]
 
+
+/**
+ * @private
+ */
+gxnat.vis.ExperimentResource.restDataObject;
+
+
+/**
+ * @override
+ * @param {!array} viewablesJson - The json returned from viewableFolderUrl
+ * @param {!string} viewableFolderUrl - The url of the viewable folders
+ * @param {!Function} runCallback.  The callback to apply.
+ */
+gxnat.vis.ExperimentResource.prototype.populateRestDataObject = function(viewablesJson,viewableFolderUrl,runCallback) {
+	var resourceLabels = '';
+	var viewables = [];
+	goog.array.forEach(viewablesJson,function(viewableJson,i){
+		var filters = projNode["experimentResourceFilters"];
+		if (!goog.isDefAndNotNull(filters) || typeof viewableJson.label === 'undefined' || viewableJson.label == '') {
+			return;
+		}
+	        for (var prop in filters) {
+			if (viewableJson.label.match(eval(prop))) {
+				resourceLabels+=(viewableJson.label + ',')
+				viewables.push(viewableJson);
+			}
+		}
+	});
+	gxnat.vis.ExperimentResource.restDataObject = { viewables:viewables };
+	if (gxnat.vis.ExperimentResource.restDataObject.viewables.length>0) {
+	    	gxnat.jsonGet(viewableFolderUrl + '/' + resourceLabels.substring(0,resourceLabels.length-1) + '/files?format=json', function(filesJson){ 
+			gxnat.vis.ExperimentResource.restDataObject.files = filesJson;
+			runCallback();
+		});
+	} else {
+		gxnat.vis.ExperimentResource.restDataObject.files = [];
+		runCallback();
+	}
+} 
+
+
 /**
  * @const
  * @type {!string}
@@ -155,30 +196,34 @@ gxnat.vis.ExperimentResource.prototype.getFileList = function(callback){
     return;
     }
 
-    gxnat.get(this.Path['originalUrl'] + "?format=xml",function(returnedXmlStr){
-        try {
-            var resourceXml = goog.dom.xml.loadXml(returnedXmlStr);
-            var entryTags = resourceXml.getElementsByTagName("entry");
-            if (!goog.isDefAndNotNull(entryTags) || entryTags.length<1) {
-                entryTags = resourceXml.getElementsByTagName("cat:entry");
-                if (!goog.isDefAndNotNull(entryTags) || entryTags.length<1) {
-                    this.filesGotten=true;
-                    return;
-                }
-            }
-            for (var i=0;i<entryTags.length;i++) {
-                var fileURI = entryTags[i].getAttribute("URI");
-                var fileUrl = this.Path['originalUrl'] + "/files/"  + fileURI;
-                if (goog.isDefAndNotNull(fileUrl)) { 
-                    this.addFiles(fileUrl, this.fileFilter);
-                }
-            }
-            this.filesGotten=true;
-            callback();
-        } catch (e) {
-            console.log(e);
-        }
-    }.bind(this), 'text');
+    var fileQueryUrl = this.queryUrl + this.fileQuerySuffix;
+    var absoluteUrl = '';    
+    var fileUrl = '';
+    var fileMetadata;
+
+    goog.array.forEach(gxnat.vis.ExperimentResource.restDataObject.viewables,function(viewable){
+	var len = gxnat.vis.ExperimentResource.restDataObject.files.length;
+	if (viewable.label!=this.json.label) {
+		return;
+	}
+	for (var i=0; i<len; i++) {
+	    fileMetadata = gxnat.vis.ExperimentResource.restDataObject.files[i];
+	    var resourceLabel = fileMetadata.URI.substring(fileMetadata.URI.indexOf("/resources/")+11);
+	    resourceLabel = resourceLabel.substring(0,resourceLabel.indexOf("/"));
+	    if (resourceLabel!=viewable.xnat_abstractresource_id && resourceLabel!=viewable.label) {
+		continue;
+	    }
+	    fileUrl = this.makeFileUrl(fileMetadata);
+	    //window.console.log("ABSOLUTE URL:", 
+	    //fileMetadataArray[i], fileUrl); 
+	    if (fileUrl) { 
+		//this.setFileMetadata(fileUrl, fileMetadata)
+		this.addFiles(fileUrl, this.fileFilter);
+	    }
+	}
+	callback();
+	this.filesGotten = true;
+    }.bind(this))
 
     this.setViewableMetadata();
 
@@ -311,6 +356,8 @@ gxnat.vis.ExperimentResource.prototype.dispose = function(){
 
 goog.exportSymbol('gxnat.vis.ExperimentResource.acceptableFileTypes',
     gxnat.vis.ExperimentResource.acceptableFileTypes);
+goog.exportSymbol('gxnat.vis.ExperimentResource.prototype.populateRestDataObject',
+    gxnat.vis.ExperimentResource.prototype.populateRestDataObject);
 goog.exportSymbol('gxnat.vis.ExperimentResource.prototype.folderQuerySuffix',
     gxnat.vis.ExperimentResource.prototype.folderQuerySuffix);
 goog.exportSymbol('gxnat.vis.ExperimentResource.prototype.fileQuerySuffix',
