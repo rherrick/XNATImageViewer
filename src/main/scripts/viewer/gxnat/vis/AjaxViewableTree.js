@@ -129,23 +129,39 @@ function(viewableFolderUrl, AjaxViewableTreeSubClass, runCallback, opt_doneCallb
 
     var restColumns = AjaxViewableTreeSubClass.prototype.restColumns;
     var columnsVar = (typeof restColumns !== 'undefined' && restColumns.length > 0) ? ('?columns=' + restColumns) : '';
-
-    gxnat.jsonGet(viewableFolderUrl + columnsVar, function(viewablesJson){
-	if (!goog.isArray(viewablesJson)) {
-	    //runCallback(viewablesJson);
-	    //return;
-	}
-	AjaxViewableTreeSubClass.prototype.populateRestDataObject(viewablesJson,viewableFolderUrl,function(){
-		goog.array.forEach(viewablesJson, function(viewable){
-		    //window.console.log("VIEWABLE:", viewable);
-		    runCallback(viewable)
-		})
-		if (opt_doneCallback){
-		    //window.console.log("done callback", opt_doneCallback);
-		    opt_doneCallback();
+    var reqCallback = function(viewablesJson){
+		AjaxViewableTreeSubClass.prototype.populateRestDataObject(viewablesJson,viewableFolderUrl,function(){
+			goog.array.forEach(viewablesJson, function(viewable){
+			    //window.console.log("VIEWABLE:", viewable);
+			    runCallback(viewable)
+			});
+			if (opt_doneCallback){
+			    //window.console.log("done callback", opt_doneCallback);
+			    opt_doneCallback();
+			}
+		});
+    };
+    gxnat.jsonGet(viewableFolderUrl + columnsVar, function(viewablesJson) {
+		// Make sure columns doesn't contain values that restrict scan return type
+		if (columnsVar.length>0) {
+    			gxnat.jsonGet(viewableFolderUrl, function(viewablesJsonNC) {
+				goog.array.forEach(viewablesJsonNC, function(viewableNC){
+					var hasMatch = goog.array.some(viewablesJson, function(viewable){
+						if (viewable.ID==viewableNC.ID) {
+							return true;
+						}
+						return false;
+					});
+					if (!hasMatch) {
+						viewablesJson.push(viewableNC);
+					}
+				});
+				reqCallback(viewablesJson);
+			});
+		} else {
+			reqCallback(viewablesJson);
 		}
-	});
-    })
+    });
 }
 
 
