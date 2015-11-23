@@ -382,6 +382,8 @@ xiv.ui.Histogram.prototype.tallyLevels_ = function() {
     //
     if (goog.isDefAndNotNull(this.levels_)) { return } 
 
+    //console.log("Begin tallyLevels - " + new Date());
+
     //
     // Increment the value counts and the total pixels
     //
@@ -391,16 +393,23 @@ xiv.ui.Histogram.prototype.tallyLevels_ = function() {
     //window.console.log('he', xObj['image'], xObj['image']);
 
 
-
-    goog.array.forEach(xObj['image'], function(sliceImg){
+    // NOTE:  Switching from goog.array.forEach and implementing sampling dramatically improved performance //
+    // of this loop (30 or more orders of magnitude, in some cases).                                        //
+    // Use sampling
+    for (var j=0;j<xObj['image'].length;j+=(Math.ceil(xObj['image'].length/50))) {
+    	var sliceImg=(xObj['image'])[j];
 
 	//window.console.log('sliceImg', sliceImg);
 
-	goog.array.forEach(sliceImg, function(sliceData){
+        // sampling basically disabled here for now to create smoother histogram
+        for (var k=0;k<sliceImg.length;k+=(Math.ceil(sliceImg.length/1000))) {
+    	    var sliceData=sliceImg[k];
 
 	    //window.console.log('sliceData', sliceData);
 
-	    goog.array.forEach(sliceData, function(pixelData){
+            // sampling basically disabled here for now to create smoother histogram
+       	    for (var l=0;l<sliceData.length;l+=(Math.ceil(sliceData.length/1000))) {
+    	        var pixelData=sliceData[l];
 
 		//window.console.log('pixelData', pixelData);
 
@@ -412,9 +421,11 @@ xiv.ui.Histogram.prototype.tallyLevels_ = function() {
 
 		this.levels_[parseInt(pixelData)]++;
 		this.totalPixels_++;
-	    }.bind(this))
-	}.bind(this))
-    }.bind(this))
+	    }
+    	}
+    }
+
+    //console.log("Finished - tallyLevels - " + new Date());
 
     if (!goog.isDefAndNotNull(this.levels_)){
 	return;
