@@ -1,3 +1,4 @@
+goog.require('xiv');
 goog.provide('xiv.sampleData.Sample');
 
 /**
