@@ -3,6 +3,6 @@
 <!-- Sequence: 6 -->
 #parse("/screens/XImgView.vm")
 <li class="yuimenuitem">
-    <a href="#" onclick="launchXImgView(); return false;"><div class="ic">&nbsp;</div><div class="ic_spacer">&nbsp;</div>View in XImgView</A>
+    <a href="#" onclick="launchXImgView(); return false;"><div class="ic">&nbsp;</div><div class="ic_spacer">&nbsp;</div>View Images</A>
 </li>
 <!-- END /templates/screens/xnat_imageSessionData/actionsBox/ViewInXImgView.vm -->

@@ -30,5 +30,7 @@ To install the XNAT image viewer into an XNAT installation:
 
 6. Run the update script to install the module in your deployed web application.
 
-7. Start Tomcat, log into your XNAT server, and browse to any of your MR sessions. You should now see an action to view the image over in the Actions box.
+7. Start Tomcat, log into your XNAT server, and browse to any of your MR sessions. You should now see an action labeled **View Images** to view the image over in the Actions box.
+
+8. The older ImageJ-based image viewer also may have an actions link labeled **View Images**.  You may want to relabel that link, by editing the relevant data types (e.g. MR Session) through the **Administer-->Data Types** link.
 
