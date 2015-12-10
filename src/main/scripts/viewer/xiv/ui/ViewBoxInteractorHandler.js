@@ -609,6 +609,46 @@ xiv.ui.ViewBoxInteractorHandler.prototype.onMouseOver_ = function(e) {
 	    this.onRenderPlanePan_(xDist, yDist);
 	}
     }
+
+    //
+    // CONTROL BRIGHTNESS/CONTRAST/ZOOM (Default mouse action)
+    //
+    else {
+    	this.clearCursorStyle_();
+	if (this.mouseDown_['l']) {	
+    		if (this.useZoomFollower_){
+			this.zoomFollower_.style.visibility = 'visible';
+		}
+		if (this.useZoomFollower_){
+		    this.updateZoomFollower_();
+		}
+		this.setCursorZoomIn_();	
+		if (this.mouseDown_['l']){
+		    this.onRenderPlaneZoom_(xDist, yDist);
+		}
+	} else if (this.mouseDown_['r']) {	
+		var brightness =this.viewableCtrls_.getLevelsController().getControllerSet().brightness;
+		var bright_curr = brightness.getValue();
+		var bright_max = brightness.getMaximum();
+		var bright_min = brightness.getMinimum();
+		var bright_step = brightness.getStep();
+		var contrast =this.viewableCtrls_.getLevelsController().getControllerSet().contrast;
+		var cont_curr = contrast.getValue();
+		var cont_max = contrast.getMaximum();
+		var cont_min = contrast.getMinimum();
+		var cont_step = contrast.getStep();
+    		if (this.mouseXY_['p'][0]>this.mouseXY_['c'][0] && bright_curr>bright_min) {
+			brightness.setValue(bright_curr-2*bright_step);
+		} else if (this.mouseXY_['p'][0]<this.mouseXY_['c'][0] && bright_curr<bright_max) {
+			brightness.setValue(bright_curr+2*bright_step);
+		}
+    		if (this.mouseXY_['p'][1]>this.mouseXY_['c'][1] && cont_curr<cont_max) {
+			contrast.setValue(cont_curr+2*cont_step);
+		} else if (this.mouseXY_['p'][1]<this.mouseXY_['c'][1] && cont_curr>cont_min) {
+			contrast.setValue(cont_curr-2*cont_step);
+		}
+	} 
+    }
 } 
 
 
