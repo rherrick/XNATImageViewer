@@ -1255,8 +1255,6 @@ function(){
 	false,
 	false
     );
-    
-
 
     this.zippyTrees_[key] = new nrg.ui.ScrollableZippyTree();
     this.zippyTrees_[key].render();
@@ -1271,11 +1269,6 @@ function(){
     this.Dialogs_.getDialogs()[this.dialogKeys_[key]].
 	getElement().appendChild(ctrlTreeElt);
 
-    this.zippyTrees_[key].expandAll();
-    
-
-
-
     // create
     var controller = new xiv.ui.CheckboxController();
     controller.render();
@@ -1287,17 +1280,40 @@ function(){
     this.zippyTrees_[key].addContents(controller.getElement(), '3D Rendering');
 
     // set events
-
+    //
     goog.events.listen(controller, 
 		       xiv.ui.XtkController.EventType.CHANGE, 
 		       function(e){
 			   this.Renderer_.setPlaneEnabled('V', e.checked);
 		       }.bind(this))
 
+    // create
+    var s_controller = new xiv.ui.CheckboxController();
+    s_controller.render();
+
+    // set label
+    s_controller.setLabel('Enable image smoothing');
+    s_controller.getComponent().setChecked(false);
+
+    this.zippyTrees_[key].addContents(s_controller.getElement(), '2D Rendering');
+
+    goog.events.listen(s_controller, 
+		       xiv.ui.XtkController.EventType.CHANGE, 
+		       function(e){
+			   var planes = [ 'X','Y','Z' ];
+			   planes.forEach(function(plane) {
+				   var renderer = this.Renderer_.getPlaneByOrientation(plane).getRenderer();
+				   if ( typeof renderer.setSmoothingEnabled !=='undefined' ) {
+				   	renderer.setSmoothingEnabled(e.checked);
+				   } 
+			   }.bind(this));
+		       }.bind(this))
+
+    this.zippyTrees_[key].expandAll();
 
     return controller;
-}
 
+}
 
 
 /**

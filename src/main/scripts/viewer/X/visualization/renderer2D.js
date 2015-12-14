@@ -186,6 +186,14 @@ X.renderer2D = function() {
   this._windowHigh = -1;
 
   /**
+   * Smoothing enabled
+   *
+   * @type {!boolean}
+   * @protected
+   */
+  this._smoothingEnabled = false;
+
+  /**
    * The buffer of the showOnly labelmap color.
    *
    * @type {!Float32Array}
@@ -205,6 +213,15 @@ X.renderer2D = function() {
 // inherit from X.base
 goog.inherits(X.renderer2D, X.renderer);
 
+
+/**
+ * Set smoothing enabled
+ *
+ * @public
+ */
+X.renderer2D.prototype.setSmoothingEnabled = function(smoothingEnabled) {
+    this._smoothingEnabled = smoothingEnabled
+};
 
 /**
  * Overload this function to execute code after scrolling has completed and just
@@ -282,7 +299,6 @@ X.renderer2D.prototype.onScroll_ = function(event) {
   // .. and trigger re-rendering
   // this.render_(false, false);
 };
-
 
 /**
  * Performs window/level adjustment for the currently loaded volume.
@@ -694,6 +710,8 @@ X.renderer2D.prototype.update_ = function(object) {
   this._frameBufferContext = _frameBuffer.getContext('2d');
   this._labelFrameBufferContext = _frameBuffer2.getContext('2d');
 
+
+
   // do the following only if the object is brand-new
   if (!existed) {
 
@@ -979,6 +997,12 @@ X.renderer2D.prototype.render_ = function(picking, invoked) {
   this._context.save();
   this._context.clearRect(-_width, -_height, 2 * _width, 2 * _height);
   this._context.restore();
+
+  // Enable/Disable smoothing
+  this._context.imageSmoothingEnabled = this._smoothingEnabled;
+  this._context.mozImageSmoothingEnabled = this._smoothingEnabled;
+  this._context.webkitImageSmoothingEnabled = this._smoothingEnabled;
+  this._context.msImageSmoothingEnabled = this._smoothingEnabled;
 
   // transform the canvas according to the view matrix
   // .. this includes zoom
@@ -1329,6 +1353,8 @@ X.renderer2D.prototype.render_ = function(picking, invoked) {
 goog.exportSymbol('X.renderer2D', X.renderer2D);
 goog.exportSymbol('X.renderer2D.prototype.init', X.renderer2D.prototype.init);
 goog.exportSymbol('X.renderer2D.prototype.add', X.renderer2D.prototype.add);
+goog.exportSymbol('X.renderer2D.prototype.setSmoothingEnabled',
+    X.renderer2D.prototype.setSmoothingEnabled);
 goog.exportSymbol('X.renderer2D.prototype.onShowtime',
     X.renderer2D.prototype.onShowtime);
 goog.exportSymbol('X.renderer2D.prototype.onRender',
