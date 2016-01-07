@@ -5,8 +5,6 @@ echo -n "Enter commit message: > "
 read commitMessage
 echo "COMMIT MESSAGE: $commitMessage"
 cd $XNATIMAGEVIEWER_HOME
-git add sample-data/scans/*
-git add sample-data/Slicer/*
 git add README.md
 git add ./build/*
 git add src
@@ -26,12 +24,6 @@ git checkout master src
 git rm -rf Demo.html
 git checkout master Demo.html
 git add index.html
-git rm -rf ./sample-data
-git checkout master sample-data
-git checkout master sample-data/*.txt
-git checkout master sample-data/*.js
-git checkout master sample-data/scans/*
-git checkout master sample-data/Slicer/*
 git add *.js
 git commit -m "From master: $commitMessage"
 git push

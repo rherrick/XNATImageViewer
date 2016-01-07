@@ -1352,17 +1352,8 @@ xiv.ui.ViewBox.prototype.renderScanViaZipDownload_ = function(ViewableSet){
 	return;
 	
     }
-    if (goog.string.caseInsensitiveContains(firstFile, 
-					    xiv.SAMPLE_SCAN_PREFIX)){
-	var spl = firstFile.split(xiv.SAMPLE_SCAN_PREFIX);
-	var prefix = spl[0] + xiv.SAMPLE_SCAN_PREFIX;
-	var filename = spl[1].split('/')[0] + '.zip';
-	filesUrl = prefix + filename
-    } 
+    filesUrl = firstFile.split('/files/')[0] + '/files';
 
-    else {
-	filesUrl = firstFile.split('/files/')[0] + '/files';
-    }
     window.console.log("XImgView Zip Downloading (XHR): " +  filesUrl);
 
     //

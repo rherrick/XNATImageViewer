@@ -15,8 +15,3 @@ goog.exportSymbol('xiv', xiv);
  */
 xiv.MODE = 'live';
 
-xiv.SAMPLE_DATA_PATH = 'xiv/sample-data';
-xiv.SAMPLE_SCAN_PREFIX = 'xiv/sample-data/scans/';
-
-goog.exportSymbol('xiv.SAMPLE_DATA_PATH', xiv.SAMPLE_DATA_PATH);
-goog.exportSymbol('xiv.SAMPLE_SCAN_PREFIX', xiv.SAMPLE_SCAN_PREFIX);

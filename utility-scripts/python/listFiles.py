@@ -5,8 +5,7 @@ import pprint
 FILE_PREFIX = 'xiv.ui.layouts.interactors'
 PPRINT = pprint.PrettyPrinter(indent=2)
 IMG_VIEW_HOME = os.environ.get('XNATIMAGEVIEWER_HOME')
-LOAD_PATH = IMG_VIEW_HOME + \
-            "/src/main/scripts/viewer/xiv/sample-data/slicer-scenes/SampleScene3"
+LOAD_PATH = IMG_VIEW_HOME 
 
 
 def getFiles(walkPath):

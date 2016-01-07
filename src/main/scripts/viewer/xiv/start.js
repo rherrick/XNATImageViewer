@@ -40,8 +40,6 @@ goog.require('gxnat.vis.ExperimentReconstruction');
 
 // xiv
 goog.require('xiv');
-goog.require('xiv.sampleData.Scans');
-goog.require('xiv.sampleData.SlicerScenes');
 
 /**
  * The main XNAT Image Viewer class.
@@ -92,7 +90,7 @@ xiv.start = function(xivState, modalState, dataPath, rootUrl){
      * @private
      */
     this.currState_ = goog.isDefAndNotNull(xivState) ? xivState : 
-	xiv.start.States.DEMO;
+	xiv.start.States.LIVE;
 
 
     /**
@@ -158,7 +156,6 @@ xiv.start.ModalStates = {
  * @expose
  */
 xiv.start.States = {
-    DEMO: 'demo',
     LIVE: 'live'
 }
 
@@ -368,21 +365,6 @@ xiv.start.prototype.begin = function() {
     this.show();
 
     //
-    // Demo load chain
-    //
-    if (this.currState_ == xiv.start.States.DEMO){
-	xiv.MODE = 'demo';
-	//
-	// Remove the popup (we don't need it)
-	//
-	goog.dom.removeNode(this.Modal_.getPopupButton());
-	goog.dom.removeNode(this.Modal_.getCloseButton());
-
-	this.startDemoLoadChain_();
-	return;
-    } 
-
-    //
     // Set the state to windowed
     //
     this.Modal_.setState(this.modalState_);
@@ -479,12 +461,7 @@ xiv.start.prototype.show = function(opt_callback){
     this.Modal_.getElement().style.opacity = 0;
     this.Modal_.render();
 
-    //
-    // only add 'add subjects' in live mode
-    //
-    if (this.currState_ !== xiv.start.States.DEMO){
-	this.Modal_.addAddSubjectsToProjectTab();
-    }
+    this.Modal_.addAddSubjectsToProjectTab();
 
     //----------------------------------------------
     // IMPORTANT!!!!    DO NOT ERASE!!!!!!!
@@ -508,62 +485,6 @@ xiv.start.prototype.show = function(opt_callback){
     // Important that this be here
     //
     nrg.fx.fadeInFromZero(this.Modal_.getElement(), this.animTime_);
-
-}
-
-
-
-/**
- * @private
- */
-xiv.start.prototype.startDemoLoadChain_ = function(){
-    var ThumbGallery = this.Modal_.getThumbnailGallery();
-    var sampleDatasets = {
-	'slicer':  (new xiv.sampleData.SlicerScenes()).getSamples(), 
-	'scan' : (new xiv.sampleData.Scans()).getSamples()
-    }    
-    var viewable;
-    var allFolders = null;
-
-    goog.object.forEach(sampleDatasets, function(sampleData, key){
-	goog.array.forEach(sampleData, function(sample){
-	    //window.console.log(sample, key);
-	    viewable = (key == 'scan') ? new this.ViewableTypes_.scan() :
-		new this.ViewableTypes_.slicer();
-	    viewable.addFiles(sample.files);
-	    viewable.setFilesGotten(true);
-	    viewable.setSessionInfo(sample.metadata);
-	    viewable.setThumbnailUrl(sample.thumbnail);
-	    this.addViewableTreeToModal_(viewable, sample.folders);
-
-	    if (allFolders == null){
-		allFolders = sample.folders;
-	    }
-	    goog.array.forEach(sample.folders, function(folder){
-		if (!goog.array.contains(allFolders, folder)){
-		    allFolders.push(folder);
-		}
-	    })
-	    
-	}.bind(this))
-    }.bind(this))
-    
-    
-    var fnodes = ThumbGallery.getZippyTree().getFolderNodes(allFolders);
-    var holders = [];
-    goog.array.forEach(fnodes, function(fnode){
-	if (!goog.isDefAndNotNull(fnode)) { return }
-	fnode.getZippy().animationDuration = 0;
-	fnode.setExpanded(true);
-	var holder = fnode.getContentHolder()
-	holder.style.opacity = 0;
-	holders.push(holder);
-    })
-    ThumbGallery.getZippyTree().getElement().style.opacity = 1;
-
-    goog.array.insertAt(holders, 
-			ThumbGallery.getZippyTree().getElement())
-    nrg.fx.sequentialFadeIn(holders, 400, 200);
 
 }
 
