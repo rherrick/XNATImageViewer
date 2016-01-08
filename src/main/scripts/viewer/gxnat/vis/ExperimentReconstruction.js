@@ -65,6 +65,41 @@ gxnat.vis.ExperimentReconstruction.acceptableFileTypes = [
 ]
 
 /**
+ * @private
+ */
+gxnat.vis.ExperimentReconstruction.restDataObject;
+
+/**
+ * @override
+ * @param {!array} viewablesJson - The json returned from viewableFolderUrl
+ * @param {!string} viewableFolderUrl - The url of the viewable folders
+ * @param {!Function} runCallback.  The callback to apply.
+ */
+gxnat.vis.ExperimentReconstruction.prototype.populateRestDataObject = function(viewablesJson,viewableFolderUrl,runCallback) {
+	var reconIds = '';
+	gxnat.vis.ExperimentReconstruction.restDataObject = { viewables:viewablesJson };
+	goog.array.forEach(viewablesJson,function(viewableJson,i){
+		if (typeof viewableJson.ID !== 'undefined' && viewableJson.ID != '') {
+			reconIds+=(viewableJson.ID + ((i<viewablesJson.length-1) ? ',' : ''));
+		}
+	});
+  gxnat.jsonGet(viewableFolderUrl + '/' + reconIds + '/files?format=json', function(filesJson){ 
+		gxnat.vis.ExperimentReconstruction.restDataObject.files = filesJson;
+		runCallback();
+	});
+} 
+
+
+/**
+ * @override
+ * @param {!array} viewablesJson - The json returned from viewableFolderUrl
+ * @param {!string} viewableFolderUrl - The url of the viewable folders
+ * @param {!Function} runCallback.  The callback to apply.
+ */
+
+
+
+/**
  * @const
  * @type {!string}
  */
@@ -163,25 +198,30 @@ gxnat.vis.ExperimentReconstruction.prototype.getFileList = function(callback){
     var fileMetadata;
     var resource = '';
 
-    //window.console.log(this, fileQueryUrl);
-    gxnat.jsonGet(fileQueryUrl, function(fileMetadataArray){
-    	//window.console.log(fileMetadataArray);
-    	len = fileMetadataArray.length;
-    	for (var i =  0; i < len; i++) {
-    	    fileMetadata = fileMetadataArray[i]
+
+    goog.array.forEach(gxnat.vis.ExperimentReconstruction.restDataObject.viewables,function(viewable){
+    	var len = gxnat.vis.ExperimentReconstruction.restDataObject.files.length;
+    	if (viewable.ID!=this.json.ID) {
+    		return;
+    	}
+    	for (var i=0; i<len; i++) {
+    	    fileMetadata = gxnat.vis.ExperimentReconstruction.restDataObject.files[i];
+    	    var reconID = fileMetadata.URI.replace(new RegExp(".*"+this.folderQuerySuffix+"\/"),"").replace(/\/.*/,"");
+    	    if (reconID!=viewable.ID) {
+    		    continue;
+    	    }
     	    fileUrl = this.makeFileUrl(fileMetadata);
     	    //window.console.log("ABSOLUTE URL:", 
     	    //fileMetadataArray[i], fileUrl); 
     	    if (fileUrl) { 
     		    this.setFileMetadata(fileUrl, fileMetadata)
-            this.addFiles(fileUrl, this.fileFilter);
+    		    this.addFiles(fileUrl, this.fileFilter);
     	    }
     	}
     	callback();
     	this.filesGotten = true;
     }.bind(this));
-    
-
+        
     this.setViewableMetadata();
 
 }
@@ -313,6 +353,8 @@ gxnat.vis.ExperimentReconstruction.prototype.dispose = function(){
 
 goog.exportSymbol('gxnat.vis.ExperimentReconstruction.acceptableFileTypes',
     gxnat.vis.ExperimentReconstruction.acceptableFileTypes);
+goog.exportSymbol('gxnat.vis.ExperimentReconstruction.prototype.populateRestDataObject',
+    gxnat.vis.ExperimentReconstruction.prototype.populateRestDataObject);
 goog.exportSymbol('gxnat.vis.ExperimentReconstruction.prototype.folderQuerySuffix',
     gxnat.vis.ExperimentReconstruction.prototype.folderQuerySuffix);
 goog.exportSymbol('gxnat.vis.ExperimentReconstruction.prototype.fileQuerySuffix',
