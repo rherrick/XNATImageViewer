@@ -88,6 +88,20 @@ gxnat.vis.Scan.acceptableFileTypes = [
 ]
 
 /**
+ * We'll drop scans that have more than 1500 frames
+ * @const
+ * @type {number}
+ */
+gxnat.vis.Scan.MAX_FRAMES = 1500;
+
+/**
+ * We'll drop scans that have more than 2000 files (used when we don't know the frame count)
+ * @const
+ * @type {number}
+ */
+gxnat.vis.Scan.MAX_FILES = 2000;
+
+/**
  * Columns to request when making REST calls (value of columns parameter, to request specific metadata)
  * @type {!string}
  */
@@ -111,7 +125,12 @@ gxnat.vis.Scan.prototype.populateRestDataObject = function(viewablesJson,viewabl
 	gxnat.vis.Scan.restDataObject = { viewables:viewablesJson };
 	goog.array.forEach(viewablesJson,function(viewableJson,i){
 		if (typeof viewableJson.ID !== 'undefined' && viewableJson.ID != '') {
-			scanIds+=(viewableJson.ID + ((i<viewablesJson.length-1) ? ',' : ''));
+			if (typeof viewableJson.frames !== 'undefined') {
+				var nFrames = parseInt(viewableJson.frames);
+			}
+			if (isNaN(nFrames) || nFrames <= gxnat.vis.Scan.MAX_FRAMES) {
+				scanIds+=(viewableJson.ID + ((i<viewablesJson.length-1) ? ',' : ''));
+			}
 		}
 	});
     	gxnat.jsonGet(viewableFolderUrl + '/' + scanIds + '/files?format=json', function(filesJson){ 
@@ -184,6 +203,9 @@ gxnat.vis.Scan.prototype.setViewableMetadata = function(){
     //
     if (goog.isDefAndNotNull(this.scanMetadata_['frames'])){
     	this.sessionInfo['Total Frames'] = this.scanMetadata_['frames'];
+    	if (typeof this.sessionInfo['Total Frames'] == 'undefined' || this.sessionInfo['Total Frames'] == "") {
+			this.sessionInfo['Total Frames'] = "Unknown";
+		}
     }
 
     //
@@ -253,6 +275,7 @@ gxnat.vis.Scan.prototype.getFileList = function(callback){
 	if (viewable.ID!=this.json.ID) {
 		return;
 	}
+    var addFileArr = [];
 	for (var i=0; i<len; i++) {
 	    fileMetadata = gxnat.vis.Scan.restDataObject.files[i];
 	    var scanID = fileMetadata.URI.substring(fileMetadata.URI.indexOf("scans/")+6);
@@ -264,10 +287,44 @@ gxnat.vis.Scan.prototype.getFileList = function(callback){
 	    //window.console.log("ABSOLUTE URL:", 
 	    //fileMetadataArray[i], fileUrl); 
 	    if (fileUrl) { 
-		this.setFileMetadata(fileUrl, fileMetadata)
-		this.addFiles(fileUrl, this.fileFilter);
+		     this.setFileMetadata(fileUrl, fileMetadata)
+           addFileArr.push(fileUrl);
+           // Remove element from array and decrement iterator and length (probably more efficient here to iterate through the array forward)
+           gxnat.vis.Scan.restDataObject.files.splice(i,1);
+           len--;
+           i--;
 	    }
 	}
+	this.addFiles(addFileArr, this.fileFilter);
+
+    if (this.sessionInfo['Total Frames'] == 0 || this.sessionInfo['Total Frames'] == "Unknown" ) {
+        this.sessionInfo['Total Frames'] = (this.ViewableGroups.length>0) ? this.ViewableGroups[0].getViewables()[0].getFiles().length : this.sessionInfo['Total Frames'];
+    }
+
+    this.ViewableGroups.sort(function(a,b) {
+        var a_hasdcm=false;
+        var a_hasnii=false;
+        var b_hasdcm=false;
+        var b_hasnii=false;
+        if (a.Viewables.length>0 && a.Viewables[0].getFiles().length>0) {
+            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
+                a_hasdcm=true;
+            } else if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
+                a_hasnii=true;
+            }
+        } 
+        if (b.Viewables.length>0 && b.Viewables[0].getFiles().length>0) {
+            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
+                b_hasdcm=true;
+            } else if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
+                b_hasnii=true;
+            }
+        } 
+        var a_srtval = ((a_hasdcm) ? 9 : 0) + ((a_hasnii) ? 5 : 0) + ((a.getTitle()<b.getTitle()) ? 1 : -1);
+        var b_srtval = ((b_hasdcm) ? 9 : 0) + ((b_hasnii) ? 5 : 0);
+        return b_srtval-a_srtval;
+    });
+
 	this.getThumbnailImage();
 	callback();
 	this.filesGotten = true;
@@ -361,52 +418,27 @@ gxnat.vis.Scan.prototype.addFiles = function(fileNames) {
 
     this.setCategory('Scans');
     
-    goog.array.forEach(fileNames.split(","), function(fileName){
-        var currFile = this.fileFilter(fileName);
+    if (fileNames.length>gxnat.vis.Scan.MAX_FILES) {
+        return;
+    }
+    for (var i=0; i<fileNames.length; i++) {
+        var currFile = this.fileFilter(fileNames[i]);
         if (!goog.isDefAndNotNull(currFile)) {
-            return;
+            continue;
         }
         var vGroup = this.getGroupForFileCreateIfNecessary(currFile);    
         if (vGroup==undefined) {
-            return;
-	}
+            continue;
+	    }
         if (vGroup.getViewables().length == 0){
             vGroup.addViewable(new gxnat.vis.Viewable());
         }
-        vGroup.getViewables()[0].addFiles(fileNames, this.fileFilter);
-    }, this);
-
-    if (this.sessionInfo['Total Frames'] == 0) {
-        this.sessionInfo['Total Frames'] = (this.ViewableGroups.length>0) ?  this.ViewableGroups[0].getViewables()[0].getFiles().length : 0;
+        vGroup.getViewables()[0].addFiles(fileNames[i], this.fileFilter);
     }
-
-    this.ViewableGroups.sort(function(a,b) {
-        var a_hasdcm=false;
-        var a_hasnii=false;
-        var b_hasdcm=false;
-        var b_hasnii=false;
-        if (a.Viewables.length>0 && a.Viewables[0].getFiles().length>0) {
-            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
-                a_hasdcm=true;
-            } else if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
-                a_hasnii=true;
-            }
-        } 
-        if (b.Viewables.length>0 && b.Viewables[0].getFiles().length>0) {
-            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
-                b_hasdcm=true;
-            } else if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
-                b_hasnii=true;
-            }
-        } 
-        var a_srtval = ((a_hasdcm) ? 9 : 0) + ((a_hasnii) ? 5 : 0) + ((a.getTitle()<b.getTitle()) ? 1 : -1);
-        var b_srtval = ((b_hasdcm) ? 9 : 0) + ((b_hasnii) ? 5 : 0);
-        return b_srtval-a_srtval;
-    });
 
     //window.console.log(this.ViewableGroups[0].getViewables()[0].getFiles());
     //window.console.log('SCAN FILE LENGTH', 
-      //this.ViewableGroups[0].getViewables()[0].getFiles().length);
+    //this.ViewableGroups[0].getViewables()[0].getFiles().length);
 }
 
 /**
@@ -497,6 +529,10 @@ gxnat.vis.Scan.prototype.dispose = function(){
 
 goog.exportSymbol('gxnat.vis.Scan.acceptableFileTypes',
     gxnat.vis.Scan.acceptableFileTypes);
+goog.exportSymbol('gxnat.vis.Scan.MAX_FRAMES',
+    gxnat.vis.Scan.MAX_FRAMES);
+goog.exportSymbol('gxnat.vis.Scan.MAX_FILES',
+    gxnat.vis.Scan.MAX_FILES);
 goog.exportSymbol('gxnat.vis.Scan.prototype.restColumns',
     gxnat.vis.Scan.prototype.restColumns);
 goog.exportSymbol('gxnat.vis.Scan.prototype.populateRestDataObject',

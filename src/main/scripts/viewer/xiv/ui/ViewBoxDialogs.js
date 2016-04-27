@@ -421,6 +421,89 @@ function(content, opt_parent, opt_onYes, opt_onNo){
 }
 
 
+/**
+ * @param {!string} content
+ * @param {Element=} opt_parent
+ * @param {Element=} opt_onOk
+ * @public
+ */
+xiv.ui.ViewBoxDialogs.createModalOkDialog = 
+function(content, opt_parent, opt_onOk){
+
+    var dialog = new nrg.ui.Dialog();
+    dialog.setButtonSet(goog.ui.Dialog.ButtonSet.OK);
+    dialog.render(goog.isDefAndNotNull(opt_parent) ? 
+		  opt_parent : document.body);
+    dialog.setContent(content);
+
+    //
+    // Add the class.
+    //
+    goog.dom.classes.add(
+	dialog.getElement(), 
+	'nrg-ui-dialogs-yesnomodal');
+
+    //
+    // Config
+    //
+    dialog.setModal(true);
+
+
+    var dialogElt = dialog.getElement();
+    var dialogBG = dialog.getBackgroundElement();
+    var fadeTime = 150;
+
+
+    goog.events.listenOnce(
+	dialog, 
+	goog.ui.Dialog.EventType.SELECT, 
+	function(e) {
+
+	    var dialogClone = dialogElt.cloneNode(true);
+	    dialogClone.style.opacity = 1;
+	    dialogClone.style.display = 'inline';
+	    goog.dom.append(dialogElt.parentNode, dialogClone);
+
+	    var dialogBGClone = dialogBG.cloneNode(true);
+	    dialogBGClone.style.opacity = .7;
+	    dialogBGClone.style.display = 'inline';
+	    goog.dom.append(dialogElt.parentNode, dialogBGClone);
+
+	    dialogClone.style.zIndex = 2000000000;
+	    dialogBGClone.style.zIndex = 2000000000;
+
+
+	    nrg.fx.parallelFade(
+		[dialogClone, dialogBGClone], 1, 0, null, null, 
+		function(){
+		    goog.dom.removeNode(dialogClone);
+		    delete dialogClone;
+		    goog.dom.removeNode(dialogBGClone);
+		    delete dialogBGClone;
+		});
+				 
+
+	    var key = e.key.toLowerCase();
+	    if (key === 'yes' && goog.isDefAndNotNull(opt_onOk)){
+		opt_onOk();
+	    }
+
+	    dialog.setDisposeOnHide(true);
+	    dialog.onHide();
+	});
+
+    dialog.setVisible(true);
+    dialog.center(true);
+    dialog.setDisposeOnHide(false);
+
+    dialogElt.style.opacity = 0;
+    dialogElt.style.zIndex = 2000000000;
+    dialogBG.style.opacity = 0;
+    dialogBG.style.zIndex = 2000000000;
+    nrg.fx.fadeIn(dialogElt, fadeTime);
+    nrg.fx.fadeTo(dialogBG, fadeTime, .7);
+}
+
 
 /**
  * @return {Array.<Element>}

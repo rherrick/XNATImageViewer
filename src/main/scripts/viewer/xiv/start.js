@@ -1071,7 +1071,7 @@ function(ViewableTree, opt_folderList){
 	if (ViewableTree.getViewableGroups().length > 0){
 	    
 	    //
-	    // Create and add the thumbnail, with its folders
+	    // Create and add the thumbnail, with its folders (NOTE:  The "thumbnail" creates the diplay DIV for the scan).
 	    //
 	    var thumb = ThumbGallery.createAndAddThumbnail(
 		ViewableTree, opt_folderList);
@@ -1093,18 +1093,21 @@ function(ViewableTree, opt_folderList){
 			folderNodes[folderNodes.length - 2]);
 
 		}
-	} else {
-        var zippyTree = this.Modal_.getThumbnailGallery().getZippyTree();
-        if (goog.isDefAndNotNull(opt_folderList)) {
-            var tZippyNodes = zippyTree.getFolderNodes(opt_folderList);
-            for (var i=tZippyNodes.length;i>=0;i--) {
-                if (tZippyNodes[i]!=undefined) {
-                    zippyTree.setLoadingIndicatorToNoFileIndicator(tZippyNodes[tZippyNodes.length-i],null);
-                    continue;
-                }
-            }
-        }
-    }
+	}
+    else {
+	    
+       var zippyTree = this.Modal_.getThumbnailGallery().getZippyTree();
+       if (goog.isDefAndNotNull(opt_folderList)) {
+           var tZippyNodes = zippyTree.getFolderNodes(opt_folderList);
+           for (var i=tZippyNodes.length;i>=0;i--) {
+               if (tZippyNodes[i]!=undefined) {
+                   zippyTree.setLoadingIndicatorToNoFileIndicator(tZippyNodes[tZippyNodes.length-i],null);
+                   continue;
+               }
+           }
+       }
+   }
+    
     }.bind(this))
 }
 

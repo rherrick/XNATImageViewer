@@ -1050,6 +1050,18 @@ function(opt_onYes){
  * @param {Function=} opt_onYes
  * @public
  */
+xiv.ui.ViewBox.prototype.showNoViewableGroupBox = function(content, opt_onOk){
+    xiv.ui.ViewBoxDialogs.createModalOkDialog(
+	(typeof content !== 'undefined') ? content : "There are no files available for viewing for this resource.",
+	this.viewFrameElt_,
+	opt_onOk);
+}
+
+
+/**
+ * @param {Function=} opt_onYes
+ * @public
+ */
 xiv.ui.ViewBox.prototype.showInUseDialog = function(opt_onYes){
     xiv.ui.ViewBoxDialogs.createModalYesNoDialog(
 	'ViewBox in use.&nbspProceed anyway?',
@@ -1075,9 +1087,24 @@ function(ViewableSet, opt_initLoadComponents) {
 
 
     //
-    // Check file count, prompt user if the frame count is too large
+    // Handle cases where there are no viewable groups (No DICOM files or too many to return).
     //
     var ViewableGroup = ViewableSet.getViewableGroups()[0];
+    if (typeof ViewableGroup == 'undefined') {
+        if (typeof ViewableSet.sessionInfo !== 'undefined' && typeof ViewableSet.sessionInfo["Total Frames"] !== undefined) {
+            var nFrames = parseInt(ViewableSet.sessionInfo["Total Frames"]);
+            if (!isNaN(nFrames) && nFrames>gxnat.vis.Scan.MAX_FRAMES) {
+                this.showNoViewableGroupBox("This scan contains too many frames to display.");
+                return false;
+            }
+        }
+        this.showNoViewableGroupBox()
+        return false;
+    }
+
+    //
+    // Check file count, prompt user if the frame count is too large
+    //
     if (goog.isDefAndNotNull(ViewableGroup.getViewables)){
 	var isScan = ViewableGroup.getCategory().toLowerCase() == 'scans';
 	var isHighFrameCount = 
