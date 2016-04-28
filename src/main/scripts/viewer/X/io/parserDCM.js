@@ -928,13 +928,31 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 
 
     volumeAttributes.dimensions = object._dimensions;
-      
 
     // get the min and max intensities
     var min_max = this.arrayMinMax(first_image_data);
+    //******************************************
+    // NRG addition (start) (MRH:  2016/04/28)
+    // ----------------------------------------
+    // Explanation of addition.  This method occasionaly returns an outrageous value for some images.  This causes 
+    // issues with the sliders and histogram in the UI, and ultimately the display, becase the UI gets populated
+    // based on the range between minimum and maximum values.   In such cases where where outlier values are seen, 
+    // let's fix the max to 1000.  Haven't seen outragous minimums, but we'll fix those too, to zero.
+    // ****************************************
+    if (!isFinite(min_max[1]) || min_max[1]>65000) {
+       min_max[1]=1000;
+    }
+    if (!isFinite(min_max[0]) || min_max[0]<0) {
+       min_max[0]=0;
+    }
+    //******************************************
+    //
+    // NRG addition (end) 
+    //
+    //******************************************
     var min = min_max[0];
     var max = min_max[1];
-      //window.console.log("MIN MAZX", min, max);
+    //window.console.log("MIN MAZX", min, max);
 
       
     // attach the scalar range to the volume
