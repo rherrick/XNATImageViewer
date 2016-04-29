@@ -713,7 +713,7 @@ xiv.ui.ViewBox.prototype.onRenderEndLive_ = function(){
     //
     //  Prioritize the layout to the stored orientation via XNAT
     //
-    else if (goog.isDefAndNotNull(this.ViewableTrees_[0].getOrientation())){
+    else if (goog.isDefAndNotNull(this.ViewableTrees_[0].getOrientation()) && !(this.ViewableTrees_[0].getOrientation().toUpperCase() == "UNKNOWN")){
 	this.setLayout(this.ViewableTrees_[0].getOrientation());
     }
     // 

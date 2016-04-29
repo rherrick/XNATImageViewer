@@ -71,6 +71,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
   // needed, for renderer2d and 3d legacy...
   object.MRI = {};
   object.MRI.loaded_files = 0;
+  object.isMultiframeDicom = false;
 //window.console.log("\n\nBegin parse");
   // parse the byte stream
   this.parseStream(data, object);
@@ -133,8 +134,10 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       
       // push image if it has not been pushed yet
       if(!imageSeriesPushed[object.slices[i]['series_instance_uid']].hasOwnProperty(object.slices[i]['sop_instance_uid'])){
-
-        imageSeriesPushed[object.slices[i]['series_instance_uid']][object.slices[i]['sop_instance_uid']] = true;
+        // Multiframe DICOM will need to continue pushing series
+        if (!object.isMultiframeDicom) {
+          imageSeriesPushed[object.slices[i]['series_instance_uid']][object.slices[i]['sop_instance_uid']] = true;
+        }
         series[object.slices[i]['series_instance_uid']].push(object.slices[i]);
 
       }
@@ -1684,12 +1687,10 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       //
       //************************************
 
-
       // Implicit VR Little Endian case
       if((slice['transfer_syntax_uid'] == '1.2.840.10008.1.2') && (_VL == 0)){
 	  _VL = _VR;
       }
-
 
       //************************************
       //
@@ -1896,6 +1897,28 @@ We would want to skip this (0012, 0064)
       case 0x0028:
       // Group of IMAGE INFO
         switch (_tagElement) {
+          case 0x0008:
+            var _position = '';
+            for (i = 0; i < _VL / 2; i++) {
+              var _short = _bytes[_bytePointer++];
+              var _b0 = _short & 0x00FF;
+              var _b1 = (_short & 0xFF00) >> 8;
+              _position += String.fromCharCode(_b0);
+              _position += String.fromCharCode(_b1);
+            }
+            slice['number_of_frames'] = parseInt(_position, 10); 
+            break;
+          case 0x0009:
+            var _position = '';
+            for (i = 0; i < _VL / 2; i++) {
+              var _short = _bytes[_bytePointer++];
+              var _b0 = _short & 0x00FF;
+              var _b1 = (_short & 0xFF00) >> 8;
+              _position += String.fromCharCode(_b0);
+              _position += String.fromCharCode(_b1);
+            }
+            slice['frame_increment_pointer'] = parseInt(_position, 10); 
+            break;
           case 0x0010:
             // rows
             slice['rows'] = _bytes[_bytePointer];
@@ -1918,7 +1941,6 @@ We would want to skip this (0012, 0064)
             // bits stored
             slice['bits_stored'] = _bytes[_bytePointer];
             _bytePointer+=_VL/2;
-            break;
           case 0x0002:
             // number of images
             slice['number_of_images'] = _bytes[_bytePointer];
@@ -2147,8 +2169,8 @@ We would want to skip this (0012, 0064)
                 break;
             }
 	}
-*/
         break;
+*/
 
     //       default:
     //         _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
@@ -2157,7 +2179,7 @@ We would want to skip this (0012, 0064)
 
       default:
         _bytePointer = X.parserDCM.prototype.handleDefaults(
-	    _bytes, _bytePointer, _VR, _VL);
+	     _bytes, _bytePointer, _VR, _VL);
         break;
       }
 
@@ -2178,26 +2200,46 @@ We would want to skip this (0012, 0064)
 
   // no need to jump anymore, parse data as any DICOM field.
   // jump to the beginning of the pixel data
-  this.jumpTo(this._data.byteLength - slice['columns'] * slice['rows'] * 2);
-  // check for data type and parse accordingly
-  var _data = null;
 
-  switch (slice.bits_allocated) {
-  case 8:
-    _data = this.scan('uchar', slice['columns'] * slice['rows']);
-    break;
-  case 16:
-     _data = this.scan('ushort', slice['columns'] * slice['rows']);
-    break;
-  case 32:
-    _data = this.scan('uint', slice['columns'] * slice['rows']);
-    break;
-  }
+
+  //var nFrames = parseInt(slice['instance_number']);
+  var imgSize = slice['columns'] * slice['rows'] * 2;
+  var nFrames = slice['number_of_frames'];
+  if (typeof nFrames == 'undefined' || isNaN(parseInt(nFrames))) {
+     nFrames = 1;
+  } else if (nFrames > 1) {
+     object.isMultiframeDicom = true;
+  } 
+
+  for (var i=nFrames; i>0; i--) {
+
+    var thisSlice = (nFrames<=1) ? slice : $.extend(true, {}, slice);  
+
+    this.jumpTo(this._data.byteLength - imgSize * i);
+    // check for data type and parse accordingly
+    var _data = null;
+  
+    switch (thisSlice.bits_allocated) {
+    case 8:
+      _data = this.scan('uchar', thisSlice['columns'] * thisSlice['rows']);
+      break;
+    case 16:
+       _data = this.scan('ushort', thisSlice['columns'] * thisSlice['rows']);
+      break;
+    case 32:
+      _data = this.scan('uint', thisSlice['columns'] * thisSlice['rows']);
+      break;
+    }
     
     //window.console.log("END\n\n");
-  slice['data'] = _data;
+    thisSlice['data'] = _data;
 
-  object.slices.push(slice);
+    if (nFrames>1) {
+      thisSlice['instance_number'] = nFrames-i+1;
+    }
+
+    object.slices.push(thisSlice);
+  } 
 
   return object;
 };
@@ -2205,3 +2247,11 @@ We would want to skip this (0012, 0064)
 // export symbols (required for advanced compilation)
 goog.exportSymbol('X.parserDCM', X.parserDCM);
 goog.exportSymbol('X.parserDCM.prototype.parse', X.parserDCM.prototype.parse);
+
+
+
+
+
+
+
+

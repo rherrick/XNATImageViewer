@@ -153,6 +153,8 @@ gxnat.vis.Scan.prototype.getOrientationFromAbbreviation_ = function(abbrev){
     return 'Coronal';
     case 'Tra':
     return 'Transverse';
+    default:
+    return 'Unknown';
     }
 }
 
