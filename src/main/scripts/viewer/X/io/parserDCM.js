@@ -249,7 +249,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 
     }
  
-
       //************************************
       //
       // Moka/NRG addition (start)
@@ -942,7 +941,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // based on the range between minimum and maximum values.   In such cases where where outlier values are seen, 
     // let's fix the max to 1000.  Haven't seen outragous minimums, but we'll fix those too, to zero.
     // ****************************************
-    if (!isFinite(min_max[1]) || min_max[1]>65000) {
+    if (!isFinite(min_max[1]) || min_max[1]>10000) {
        min_max[1]=1000;
     }
     if (!isFinite(min_max[0]) || min_max[0]<0) {
@@ -1523,7 +1522,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       _bytePointer+=_VL/2;
         break;
     }
-
   return _bytePointer;
 }
 
@@ -1686,6 +1684,28 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       // ErasmusMC addition (end)
       //
       //************************************
+      
+      //******************************************
+      // NRG addition (start) (MRH:  2016/05/03)
+      // ----------------------------------------
+      // Explanation of addition.  Some DICOM contains a tag that indicates the start of pixel data.  These DICOM are likely padded 
+      // at the end of the file.  The image viewer displayed these as split images because prior behavior was to just read
+      // pixel data back from the end of the file.  We use information from this tag to determine the start of pixel data when it's 
+      // available.
+      // ****************************************
+      if (_tagGroup == 0x7FE0) {
+        // Group of DICOM meta info header
+        if (_tagElement == 0x0010) {
+            slice['pixel_data_start'] = _bytePointer * 2 + 6;
+            _bytePointer+=_VL/2;
+            break;
+        }
+      }
+      //******************************************
+      //
+      // NRG addition (end) 
+      //
+      //******************************************
 
       // Implicit VR Little Endian case
       if((slice['transfer_syntax_uid'] == '1.2.840.10008.1.2') && (_VL == 0)){
@@ -1866,7 +1886,6 @@ We would want to skip this (0012, 0064)
       // Moka/NRG addition (end)
       //
       //************************************
-
 
     switch (_tagGroup) {
       case 0x0002:
@@ -2180,6 +2199,21 @@ We would want to skip this (0012, 0064)
       default:
         _bytePointer = X.parserDCM.prototype.handleDefaults(
 	     _bytes, _bytePointer, _VR, _VL);
+        //******************************************
+        // NRG addition (start) (MRH:  2016/05/03)
+        // ----------------------------------------
+        // Explanation of addition.  Some values were being returned as decimal values here.  Note that for some strange reason, it seems
+        // better to round here rather than in the handleDefaults method.  Some DICOM seem to be relying on invalid values
+        // being returned elsewhere and report "RangeError:  Source is too large" errors when that doesn't happen.  Tracking
+        // this down should probably be a TODO.  The main reason we need this to return valid values is so we can read far enough
+        // through the tags to set the "pixel_data_start" value.
+        // ****************************************
+        _bytePointer = Math.round(_bytePointer);
+        //******************************************
+        //
+        // NRG addition (end) 
+        //
+        //******************************************
         break;
       }
 
@@ -2199,10 +2233,14 @@ We would want to skip this (0012, 0064)
     }
 
   // no need to jump anymore, parse data as any DICOM field.
-  // jump to the beginning of the pixel data
+        
+  //******************************************
+  // NRG changes (start) (MRH:  2016/05/XX)
+  // ----------------------------------------
+  // Explanation of changes.  This section has been modified to support multi-frame DICOM and to use the DICOM 0x7FE0, 0x0010
+  // tag to locate pixel data where it is available.  Previous versions had just read from the end of the file.
+  // ****************************************
 
-
-  //var nFrames = parseInt(slice['instance_number']);
   var imgSize = slice['columns'] * slice['rows'] * 2;
   var nFrames = slice['number_of_frames'];
   if (typeof nFrames == 'undefined' || isNaN(parseInt(nFrames))) {
@@ -2211,11 +2249,18 @@ We would want to skip this (0012, 0064)
      object.isMultiframeDicom = true;
   } 
 
+  var pixelDataStart = slice['pixel_data_start'];
+
   for (var i=nFrames; i>0; i--) {
 
     var thisSlice = (nFrames<=1) ? slice : $.extend(true, {}, slice);  
-
-    this.jumpTo(this._data.byteLength - imgSize * i);
+    
+     // jump to the beginning of the pixel data
+    if (typeof pixelDataStart !== 'undefined') {
+      this.jumpTo(pixelDataStart + (imgSize*nFrames) - (imgSize*i));
+    } else {
+      this.jumpTo(this._data.byteLength - imgSize * i);
+    }
     // check for data type and parse accordingly
     var _data = null;
   
@@ -2237,6 +2282,12 @@ We would want to skip this (0012, 0064)
     if (nFrames>1) {
       thisSlice['instance_number'] = nFrames-i+1;
     }
+        
+  //******************************************
+  // 
+  // NRG changes (end) 
+  // 
+  // ****************************************
 
     object.slices.push(thisSlice);
   } 
@@ -2247,11 +2298,5 @@ We would want to skip this (0012, 0064)
 // export symbols (required for advanced compilation)
 goog.exportSymbol('X.parserDCM', X.parserDCM);
 goog.exportSymbol('X.parserDCM.prototype.parse', X.parserDCM.prototype.parse);
-
-
-
-
-
-
 
 
