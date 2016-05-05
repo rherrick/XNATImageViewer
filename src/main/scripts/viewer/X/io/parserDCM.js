@@ -126,7 +126,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 
       // series undefined yet
       if(!series.hasOwnProperty(object.slices[i]['series_instance_uid'])){
-
+        
         series[object.slices[i]['series_instance_uid']] = new Array();
         imageSeriesPushed[object.slices[i]['series_instance_uid']] = {};
 
@@ -140,7 +140,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
         }
         series[object.slices[i]['series_instance_uid']].push(object.slices[i]);
 
-      }
+      } 
 
     }
 
@@ -668,7 +668,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     var first_image_size = first_slice_size * first_image_expected_nb_slices;
 
 
-
       //************************************
       //
       // Moka/NRG addition (start)
@@ -866,9 +865,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 	    _data = newData;
 	}
 	
-	//
-	// We can't have decimals with allocating the buffer array.
-	//
 	first_image_data.set(
 	    _data, Math.round(_distance_position) * first_slice_size);
 
@@ -1522,6 +1518,19 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       _bytePointer+=_VL/2;
         break;
     }
+  //******************************************
+  // NRG addition (start) (MRH:  2016/05/03)
+  // ----------------------------------------
+  // Explanation of addition.  Some values were being returned as decimal values here.  Let's make sure that doesn't happen.
+  // ****************************************
+  if (_bytePointer % 1 !== 0) {
+    _bytePointer = Math.round(_bytePointer);
+  }
+  //******************************************
+  //
+  // NRG addition (end) 
+  //
+  //******************************************
   return _bytePointer;
 }
 
@@ -1639,6 +1648,7 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       _VR = _bytes[_bytePointer++];
       _VL = _bytes[_bytePointer++];
 
+
       //************************************
       //
       // ErasmusMC addition (start)
@@ -1701,6 +1711,7 @@ X.parserDCM.prototype.parseStream = function(data, object) {
             break;
         }
       }
+
       //******************************************
       //
       // NRG addition (end) 
@@ -1835,7 +1846,7 @@ We would want to skip this (0012, 0064)
 		  _tagGroup.toString(16) + ', 0x' +
 		  _tagElement.toString(16) +')' + 
 		  _tagGroup + ' ' +  _tagElement;
-	      window.console.log(_msg);
+	      //window.console.log(_msg);
 
 	      if ((_tagGroup == 0x0008 && _tagElement == 0x1140) || 
 		  (_tagGroup == 0x0009 && _tagElement == 0x7770)){
@@ -1892,18 +1903,23 @@ We would want to skip this (0012, 0064)
         // Group of DICOM meta info header
         switch (_tagElement) {
           case 0x0010:
-            // TransferSyntaxUID
-            var _transfer_syntax_uid = '';
-            // pixel spacing is a delimited string (ASCII)
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _transfer_syntax_uid += String.fromCharCode(_b0);
-              _transfer_syntax_uid += String.fromCharCode(_b1);
+            if (typeof slice['transfer_syntax_uid'] == 'undefined' || slice['transfer_syntax_uid'] == "no_transfer_syntax_uid") {
+              // TransferSyntaxUID
+              var _transfer_syntax_uid = '';
+              // pixel spacing is a delimited string (ASCII)
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _transfer_syntax_uid += String.fromCharCode(_b0);
+                _transfer_syntax_uid += String.fromCharCode(_b1);
+              }
+              slice['transfer_syntax_uid'] = _transfer_syntax_uid.replace(/\0/g,'');
+            } else {
+               //console.log("WARNING:  ALREADY DEFINED - slice['transfer_syntax_uid']",slice['transfer_syntax_uid']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
-            slice['transfer_syntax_uid'] = _transfer_syntax_uid.replace(/\0/g,'');
             break;
           default:
             _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
@@ -1917,36 +1933,60 @@ We would want to skip this (0012, 0064)
       // Group of IMAGE INFO
         switch (_tagElement) {
           case 0x0008:
-            var _position = '';
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _position += String.fromCharCode(_b0);
-              _position += String.fromCharCode(_b1);
+            if (typeof slice['number_of_frames'] == 'undefined') {
+              var _position = '';
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _position += String.fromCharCode(_b0);
+                _position += String.fromCharCode(_b1);
+              }
+              if (!isNaN(parseInt(_position,10))) {
+                slice['number_of_frames'] = parseInt(_position, 10); 
+              }
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['number_of_frames']",slice['number_of_frames']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
-            slice['number_of_frames'] = parseInt(_position, 10); 
             break;
           case 0x0009:
-            var _position = '';
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _position += String.fromCharCode(_b0);
-              _position += String.fromCharCode(_b1);
+            if (typeof slice['frame_increment_pointer'] == 'undefined') {
+              var _position = '';
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _position += String.fromCharCode(_b0);
+                _position += String.fromCharCode(_b1);
+              }
+              if (!isNaN(parseInt(_position,10))) {
+                slice['frame_increment_pointer'] = parseInt(_position, 10); 
+              }
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['frame_increment_pointer']",slice['frame_increment_pointer']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
-            slice['frame_increment_pointer'] = parseInt(_position, 10); 
             break;
           case 0x0010:
-            // rows
-            slice['rows'] = _bytes[_bytePointer];
-            _bytePointer+=_VL/2;
+            if (typeof slice['rows'] == 'undefined') {
+              // rows
+              slice['rows'] = _bytes[_bytePointer];
+              _bytePointer+=_VL/2;
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['rows']",slice['rows']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            }
             break;
           case 0x0011:
             // cols
-            slice['columns'] = _bytes[_bytePointer];
-            _bytePointer+=_VL/2;
+            if (typeof slice['columns'] == 'undefined') {
+              slice['columns'] = _bytes[_bytePointer];
+              _bytePointer+=_VL/2;
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['columns']",slice['columns']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            }
             break;
           case 0x0100:
             // bits allocated
@@ -1958,27 +1998,42 @@ We would want to skip this (0012, 0064)
             break;
           case 0x0101:
             // bits stored
-            slice['bits_stored'] = _bytes[_bytePointer];
-            _bytePointer+=_VL/2;
+            if (typeof slice['bits_stored'] == 'undefined') {
+              slice['bits_stored'] = _bytes[_bytePointer];
+              _bytePointer+=_VL/2;
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['bits_stored']",slice['bits_stored']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            }
           case 0x0002:
             // number of images
-            slice['number_of_images'] = _bytes[_bytePointer];
-            _bytePointer+=_VL/2;
+            if (typeof slice['number_of_images'] == 'undefined') {
+              slice['number_of_images'] = _bytes[_bytePointer];
+              _bytePointer+=_VL/2;
+            } else {
+               //console.log("WARNING:  ALREADY DEFINED - slice['number_of_images']",slice['number_of_images']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            }
             break;
           case 0x0030:
             // pixel spacing
-            var _pixel_spacing = '';
-            // pixel spacing is a delimited string (ASCII)
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _pixel_spacing += String.fromCharCode(_b0);
-              _pixel_spacing += String.fromCharCode(_b1);
-            }
-            _pixel_spacing = _pixel_spacing.split("\\");
-            slice['pixel_spacing'] = [ parseFloat(_pixel_spacing[0]), parseFloat(_pixel_spacing[1]), Infinity ];
+            //if (typeof slice['pixel_spacing'] == 'undefined') {
+              var _pixel_spacing = '';
+              // pixel spacing is a delimited string (ASCII)
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _pixel_spacing += String.fromCharCode(_b0);
+                _pixel_spacing += String.fromCharCode(_b1);
+              }
+              _pixel_spacing = _pixel_spacing.split("\\");
+              slice['pixel_spacing'] = [ parseFloat(_pixel_spacing[0]), parseFloat(_pixel_spacing[1]), Infinity ];
+            //} else {
+            //   window.console.log("WARNING:  ALREADY DEFINED - slice['pixel_spacing']",slice['pixel_spacing']);
+            //   _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            //}
             break;
 
           case 0x1052: // rescale intercept
@@ -2003,62 +2058,84 @@ We would want to skip this (0012, 0064)
         switch (_tagElement) {
           case 0x000e:
             // Series instance UID
-            slice['series_instance_uid'] = "";
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              slice['series_instance_uid'] += String.fromCharCode(_b0);
-              slice['series_instance_uid'] += String.fromCharCode(_b1);
+            if (typeof slice['series_instance_uid'] == 'undefined') {
+              slice['series_instance_uid'] = "";
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                slice['series_instance_uid'] += String.fromCharCode(_b0);
+                slice['series_instance_uid'] += String.fromCharCode(_b1);
+              }
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['series_instance_uid']",slice['series_instance_uid']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
             break;
           case 0x0013:
-            var _position = '';
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _position += String.fromCharCode(_b0);
-              _position += String.fromCharCode(_b1);
-            }
-            slice['instance_number'] = parseInt(_position, 10); 
+            if (typeof slice['instance_number'] == 'undefined' || slice['instance_number'] == 0) {
+              var _position = '';
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _position += String.fromCharCode(_b0);
+                _position += String.fromCharCode(_b1);
+              }
+              if (!isNaN(parseInt(_position,10))) {
+                slice['instance_number'] = parseInt(_position, 10); 
+              }
+            } else {
+               window.console.log("WARNING:  ALREADY DEFINED - slice['instance_number']",slice['instance_number']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            } 
             break;
           case 0x0032:
-            // image position
-            var _image_position = '';
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _image_position += String.fromCharCode(_b0);
-              _image_position += String.fromCharCode(_b1);
-            }
-            _image_position = _image_position.split("\\");
-            slice['image_position_patient'] = [ parseFloat(_image_position[0]), parseFloat(_image_position[1]),
-                parseFloat(_image_position[2]) ];
-            // _tagCount--;
+            //if (typeof slice['image_position_patient'] == 'undefined' || slice['image_position_patient'].toString() == ([0, 0, 0]).toString()) {
+              // image position
+              var _image_position = '';
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _image_position += String.fromCharCode(_b0);
+                _image_position += String.fromCharCode(_b1);
+              }
+              _image_position = _image_position.split("\\");
+              slice['image_position_patient'] = [ parseFloat(_image_position[0]), parseFloat(_image_position[1]),
+                  parseFloat(_image_position[2]) ];
+              // _tagCount--;
+            //} else {
+            //   window.console.log("WARNING:  ALREADY DEFINED - slice['image_position_patient']",slice['image_position_patient']);
+            //   _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            //}
             break;
           case 0x0037:
-            // image orientation
-            // pixel spacing
-            var _image_orientation = '';
-            // pixel spacing is a delimited string (ASCII)
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _image_orientation += String.fromCharCode(_b0);
-              _image_orientation += String.fromCharCode(_b1);
-            }
-            _image_orientation = _image_orientation.split("\\");
-            slice['image_orientation_patient'] = [ parseFloat(_image_orientation[0]),
-                parseFloat(_image_orientation[1]), parseFloat(_image_orientation[2]),
-                parseFloat(_image_orientation[3]), parseFloat(_image_orientation[4]),
-                parseFloat(_image_orientation[5]) ];
-            // _tagCount--;
+            //if (typeof slice['image_orientation_patient'] == 'undefined') {
+              // image orientation
+              // pixel spacing
+              var _image_orientation = '';
+              // pixel spacing is a delimited string (ASCII)
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                _image_orientation += String.fromCharCode(_b0);
+                _image_orientation += String.fromCharCode(_b1);
+              }
+              _image_orientation = _image_orientation.split("\\");
+              slice['image_orientation_patient'] = [ parseFloat(_image_orientation[0]),
+                  parseFloat(_image_orientation[1]), parseFloat(_image_orientation[2]),
+                  parseFloat(_image_orientation[3]), parseFloat(_image_orientation[4]),
+                  parseFloat(_image_orientation[5]) ];
+              // _tagCount--;
+            //} else {
+            //   window.console.log("WARNING:  ALREADY DEFINED - slice['image_orientation_patient']",slice['image_orientation_patient']);
+            //   _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
+            //}
             break;
 
           default:
@@ -2092,14 +2169,19 @@ We would want to skip this (0012, 0064)
         switch (_tagElement) {
           case 0x0018:
             // Image instance UID
-            slice['sop_instance_uid'] = "";
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              slice['sop_instance_uid'] += String.fromCharCode(_b0);
-              slice['sop_instance_uid'] += String.fromCharCode(_b1);
+            if (typeof slice['sop_instance_uid'] == 'undefined') {
+              slice['sop_instance_uid'] = "";
+              var i = 0;
+              for (i = 0; i < _VL / 2; i++) {
+                var _short = _bytes[_bytePointer++];
+                var _b0 = _short & 0x00FF;
+                var _b1 = (_short & 0xFF00) >> 8;
+                slice['sop_instance_uid'] += String.fromCharCode(_b0);
+                slice['sop_instance_uid'] += String.fromCharCode(_b1);
+              }
+            } else {
+               //console.log("WARNING:  ALREADY DEFINED - slice['sop_instance_uid']",slice['sop_instance_uid']);
+               _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
             break;
 
@@ -2114,14 +2196,19 @@ We would want to skip this (0012, 0064)
           //************************************          
 
           case 0x103E:
-              object['series_description'] = "";
-              var i = 0;
-              for (i = 0; i < _VL / 2; i++) {
-                var _short = _bytes[_bytePointer++];
-                var _b0 = _short & 0x00FF;
-                var _b1 = (_short & 0xFF00) >> 8;
-                object['series_description'] += String.fromCharCode(_b0);
-                object['series_description'] += String.fromCharCode(_b1);
+              if (typeof slice['series_description'] == 'undefined') {
+                object['series_description'] = "";
+                var i = 0;
+                for (i = 0; i < _VL / 2; i++) {
+                  var _short = _bytes[_bytePointer++];
+                  var _b0 = _short & 0x00FF;
+                  var _b1 = (_short & 0xFF00) >> 8;
+                  object['series_description'] += String.fromCharCode(_b0);
+                  object['series_description'] += String.fromCharCode(_b1);
+                }
+              } else {
+                 window.console.log("WARNING:  ALREADY DEFINED - slice['series_description']",slice['series_description']);
+                 _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
               }
               break;
 
@@ -2144,17 +2231,22 @@ We would want to skip this (0012, 0064)
         // here we are only interested in the InstanceNumber
         switch (_tagElement) {
           case 0x2210:
-            // anatomical orientation
-            // pixel spacing
-            var _anatomical_orientation = '';
-            // pixel spacing is a delimited string (ASCII)
-            var i = 0;
-            for (i = 0; i < _VL / 2; i++) {
-              var _short = _bytes[_bytePointer++];
-              var _b0 = _short & 0x00FF;
-              var _b1 = (_short & 0xFF00) >> 8;
-              _anatomical_orientation += String.fromCharCode(_b0);
-              _anatomical_orientation += String.fromCharCode(_b1);
+            if (typeof _anatomical_orientation == 'undefined') {
+               // anatomical orientation
+               // pixel spacing
+               var _anatomical_orientation = '';
+               // pixel spacing is a delimited string (ASCII)
+               var i = 0;
+               for (i = 0; i < _VL / 2; i++) {
+                 var _short = _bytes[_bytePointer++];
+                 var _b0 = _short & 0x00FF;
+                 var _b1 = (_short & 0xFF00) >> 8;
+                 _anatomical_orientation += String.fromCharCode(_b0);
+                 _anatomical_orientation += String.fromCharCode(_b1);
+               }
+            } else {
+                 window.console.log("WARNING:  ALREADY DEFINED - _anatomical_orientation",_anatomical_orientation);
+                 _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
             break;
 
@@ -2200,15 +2292,26 @@ We would want to skip this (0012, 0064)
         _bytePointer = X.parserDCM.prototype.handleDefaults(
 	     _bytes, _bytePointer, _VR, _VL);
         //******************************************
-        // NRG addition (start) (MRH:  2016/05/03)
+        // NRG addition (start) (MRH:  2016/05/05)
         // ----------------------------------------
-        // Explanation of addition.  Some values were being returned as decimal values here.  Note that for some strange reason, it seems
-        // better to round here rather than in the handleDefaults method.  Some DICOM seem to be relying on invalid values
-        // being returned elsewhere and report "RangeError:  Source is too large" errors when that doesn't happen.  Tracking
-        // this down should probably be a TODO.  The main reason we need this to return valid values is so we can read far enough
-        // through the tags to set the "pixel_data_start" value.
+        // Explanation of addition:  Let's try not to parse into the pixel data for images where we don't have a tag telling
+        // us where it is.  It is not uncommon to hit random sequences that look like the DICOM tags we're parsing for, and
+        // this was causing some issues.  This should be a conservative estimate of the location of the data, assuming it's
+        // at the end of the file and using image size and number of frames, when we have it, to determine the staring point.
         // ****************************************
-        _bytePointer = Math.round(_bytePointer);
+        if (typeof slice['columns'] !== 'undefined' && typeof slice['rows'] !== 'undefined') {
+          var imgSize = slice['columns'] * slice['rows'] * 2;
+          var nFrames = slice['number_of_frames'];
+          if (typeof nFrames == 'undefined' || isNaN(parseInt(nFrames))) {
+             nFrames = 1;
+          } 
+          var estPixelDataStart = this._data.byteLength - imgSize * nFrames;
+          // Shouldn't be necessary to add 10 here.  Just adding a small measure of safety.
+          if (_bytePointer > (estPixelDataStart+10)) {
+             //window.console.log("DICOM PARSE:  Hit pixel data [_bytePointer=" + _bytePointer + "].  Stop parsing.");
+             _bytePointer = Number.MAX_VALUE;
+          }
+        }
         //******************************************
         //
         // NRG addition (end) 
@@ -2258,8 +2361,10 @@ We would want to skip this (0012, 0064)
      // jump to the beginning of the pixel data
     if (typeof pixelDataStart !== 'undefined') {
       this.jumpTo(pixelDataStart + (imgSize*nFrames) - (imgSize*i));
+      //window.console.log("DICOM PARSE:  Using pixelDataStart for selection of pixel data");
     } else {
       this.jumpTo(this._data.byteLength - imgSize * i);
+      //window.console.log("DICOM PARSE:  Using _data.byteLength for selection of pixel data");
     }
     // check for data type and parse accordingly
     var _data = null;
