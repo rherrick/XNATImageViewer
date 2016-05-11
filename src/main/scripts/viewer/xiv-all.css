@@ -5144,7 +5144,7 @@
   position: fixed;
   background-color: black;
   border: none;
-  z-index: 2;
+  z-index: 4;
   top: 0px;
   left: 0px;
   height: 100%;
