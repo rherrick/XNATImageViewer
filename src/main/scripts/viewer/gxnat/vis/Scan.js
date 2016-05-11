@@ -447,9 +447,22 @@ gxnat.vis.Scan.prototype.addFiles = function(fileNames) {
  * @inheritDoc
  */
 gxnat.vis.Scan.prototype.makeFileUrl = function(xnatFileJson) {
-    return gxnat.Path.graftUrl(this.experimentUrl, 
-          xnatFileJson[this.fileContentsKey], 'experiments');
-
+    var origStr = gxnat.Path.graftUrl(this.experimentUrl, xnatFileJson[this.fileContentsKey], 'experiments');
+    var newStr = "";
+    // Replace numeric resource ID with text value if available;
+    if (goog.isDefAndNotNull(xnatFileJson.collection) && xnatFileJson.collection !== ''){
+        var arr = origStr.split('/');
+        for (var i=0; i<arr.length; i++) {
+            if (arr[i]=="resources") {
+                arr[i+1] = xnatFileJson.collection;
+            }
+            if (goog.isDefAndNotNull(arr[i]) && arr[i] !== ''){
+                newStr+=("/" + arr[i]);
+            }
+        }
+        return newStr;
+    } 
+    return origStr;;
 }
 
 
