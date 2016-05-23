@@ -3,6 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <version>1.0.0</version>
 
     <parent>
         <groupId>org.nrg</groupId>
@@ -13,12 +14,20 @@
 
     <groupId>org.nrg.xnatx.modules</groupId>
     <artifactId>ximgview</artifactId>
-    <name>XNAT Image Viewer Module</name>
+    <name>XNAT Image Viewer Module (XImgView)</name>
     <description>
         This is the module for the XNAT Image Viewer. XImgView is an HTML5-based
         viewer interface that integrates directly into the XNAT workflow.
     </description>
-
+    <scm>
+        <connection>scm:git:ssh://git@bitbucket.org/xnatdev/xnat-image-viewer-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@bitbucket.org/xnatdev/xnat-image-viewer-plugin.git</developerConnection>
+        <url>https://bitbucket.org/xnatdev/xnat-image-viewer-plugin.git</url>
+    </scm> 
+    <properties>
+       <timestamp>${maven.build.timestamp}</timestamp>
+       <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+    </properties>
     <profiles>
        <profile>
           <id>1.7</id>
@@ -26,9 +35,28 @@
           <activeByDefault>true</activeByDefault>
           </activation>
           <build>
-              <finalName>xnatx-${project.artifactId}-${project.version}</finalName>
+              <finalName>${project.artifactId}-plugin-${project.version}</finalName>
               <pluginManagement>
                   <plugins>
+                      <plugin>
+                        <!-- Not sure why this currently does not seem to be generating a build number -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>buildnumber-maven-plugin</artifactId>
+                        <version>1.4</version>
+                        <configuration>
+                          <shortRevisionLength>5</shortRevisionLength>
+                          <doCheck>false</doCheck>
+                          <doUpdate>true</doUpdate>
+                        </configuration>
+                        <executions>
+                          <execution>
+                            <phase>validate</phase>
+                            <goals>
+                              <goal>create</goal>
+                            </goals>
+                          </execution>
+                        </executions>
+                      </plugin>
                       <plugin>
                           <groupId>org.apache.maven.plugins</groupId>
                           <artifactId>maven-compiler-plugin</artifactId>
@@ -51,6 +79,25 @@
                           <groupId>org.apache.maven.plugins</groupId>
                           <artifactId>maven-resources-plugin</artifactId>
                           <version>2.3</version>
+                      </plugin>
+                      <plugin>
+                          <groupId>org.apache.maven.plugins</groupId>
+                          <artifactId>maven-jar-plugin</artifactId>
+                          <configuration>
+                             <archive>
+                               <index>true</index>
+                               <manifest>
+                                 <addClasspath>true</addClasspath>
+                               </manifest>
+                               <manifestEntries>
+                                 <Application-Name>${project.name}</Application-Name>
+                                 <Implementation-Version>${project.version}</Implementation-Version>
+                                 <Build-Date>${maven.build.timestamp}</Build-Date>
+                                 <!--<Build-Number>${buildNumber}</Build-Number>-->
+                                 <Build-Number>Manual</Build-Number>
+                               </manifestEntries>
+                             </archive>
+                           </configuration>
                       </plugin>
                   </plugins>
               </pluginManagement>
