@@ -3,17 +3,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <parent>
         <groupId>org.nrg</groupId>
-        <artifactId>nrg</artifactId>
+        <artifactId>parent</artifactId>
         <version>1.7.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>org.nrg.xnatx.modules</groupId>
-    <artifactId>ximgview</artifactId>
+    <groupId>org.nrg.xnatx.plugins</groupId>
+    <artifactId>ximgview-plugin</artifactId>
     <name>XNAT Image Viewer Module (XImgView)</name>
     <description>
         This is the module for the XNAT Image Viewer. XImgView is an HTML5-based
@@ -35,7 +34,7 @@
           <activeByDefault>true</activeByDefault>
           </activation>
           <build>
-              <finalName>${project.artifactId}-plugin-${project.version}</finalName>
+              <finalName>${project.artifactId}-${project.version}</finalName>
               <pluginManagement>
                   <plugins>
                       <plugin>
@@ -125,7 +124,7 @@
        <profile>
           <id>1.6.5</id>
           <build>
-              <finalName>xnatx-${project.artifactId}-1.6.5</finalName>
+              <finalName>xnatx-ximgview-1.6.5</finalName>
               <pluginManagement>
                   <plugins>
                       <plugin>
@@ -172,43 +171,30 @@
        </profile>
     </profiles>
 
-    <distributionManagement>
-        <repository>
-            <id>XNAT Server</id>
-            <name>XNAT Maven Library Release</name>
-            <url>http://maven.xnat.org/libs-release-local</url>
-        </repository>
-        <snapshotRepository>
-            <id>XNAT Server</id>
-            <name>XNAT Maven Library Snapshots</name>
-            <url>http://maven.xnat.org/libs-snapshot-local</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <name>XNAT Snapshot Maven Plugin Repo</name>
-            <id>org.nrg.maven.plugins.snapshot</id>
-            <url>http://maven.xnat.org/plugins-snapshot</url>
-        </pluginRepository>
-        <pluginRepository>
-            <name>XNAT Release Maven Plugin Repo</name>
-            <id>org.nrg.maven.plugins.release</id>
-            <url>http://maven.xnat.org/plugins-release</url>
-        </pluginRepository>
-    </pluginRepositories>
-
     <repositories>
         <repository>
-            <name>XNAT Release Maven Repo</name>
-            <id>org.nrg.maven.artifacts.release</id>
-            <url>http://maven.xnat.org/libs-release</url>
+            <id>org.nrg.xnat.maven.libraries.release</id>
+            <name>XNAT Maven Release Libraries</name>
+            <url>https://nrgxnat.artifactoryonline.com/nrgxnat/libs-release</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
         <repository>
-            <name>XNAT Snapshot Maven Repo</name>
-            <id>org.nrg.maven.artifacts.snapshot</id>
-            <url>http://maven.xnat.org/libs-snapshot</url>
+            <id>org.nrg.xnat.maven.libraries.snapshot</id>
+            <name>XNAT Maven Snapshot Libraries</name>
+            <url>https://nrgxnat.artifactoryonline.com/nrgxnat/libs-snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
 </project>
+
