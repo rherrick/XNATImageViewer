@@ -62,6 +62,8 @@ goog.exportSymbol('gxnat.vis.ExperimentResource', gxnat.vis.ExperimentResource);
 gxnat.vis.ExperimentResource.acceptableFileTypes = [    
     'dcm',
     'dicom',
+    'ima',
+    'd',
     'nii.gz',
     'nii',
 ]
@@ -312,14 +314,16 @@ gxnat.vis.ExperimentResource.prototype.addFiles = function(fileNames) {
         var b_hasdcm=false;
         var b_hasnii=false;
         if (a.Viewables.length>0 && a.Viewables[0].getFiles().length>0) {
-            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
+            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 ||
+                a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
                 a_hasdcm=true;
             } else if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
                 a_hasnii=true;
             }
         } 
         if (b.Viewables.length>0 && b.Viewables[0].getFiles().length>0) {
-            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".dcm")>=0) {
+            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 ||
+                b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
                 b_hasdcm=true;
             } else if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
                 b_hasnii=true;
