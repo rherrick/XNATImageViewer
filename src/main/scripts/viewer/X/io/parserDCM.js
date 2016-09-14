@@ -2356,7 +2356,7 @@ We would want to skip this (0012, 0064)
 
   for (var i=nFrames; i>0; i--) {
 
-    var thisSlice = (nFrames<=1) ? slice : $.extend(true, {}, slice);  
+    var thisSlice = (nFrames<=1) ? slice : Object.assign({}, slice);  
     
      // jump to the beginning of the pixel data
     if (typeof pixelDataStart !== 'undefined') {
