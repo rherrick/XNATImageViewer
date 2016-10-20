@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+	<head>
+		<link type="text/css" rel="stylesheet" href="Demo.css">
+		<link type="text/css" rel="stylesheet" href="src/main/scripts/viewer/nrg/css/nrg.css">
+		<link type="text/css" rel="stylesheet" href="src/main/scripts/viewer/xiv/css/xiv.css">
+
+	<!--
+		<link type="text/css" rel="stylesheet" href="src/main/scripts/viewer/css/viewer.min.css">
+	-->
+		<script src="src/main/scripts/viewer/closure-library/closure/goog/base.js"></script>
+		<script src="src/main/scripts/viewer/X/xtk-deps.js"></script>
+		<script src="src/main/scripts/viewer/_custom/X/xtk-custom-deps.js"></script>
+		<script src="src/main/scripts/viewer/jszip/jszip.js"></script>
+		<script src="src/main/scripts/viewer/nrg/nrg-deps.js"></script>
+		<script src="src/main/scripts/viewer/gxnat/gxnat-deps.js"></script>
+		<script src="src/main/scripts/viewer/xiv/xiv-deps.js"></script>
+		<script>
+		  goog.require('goog.userAgent');
+		  goog.require('goog.dom');
+		  goog.require('xiv.start');
+		  goog.require('xiv.ui.Modal');
+		  goog.require('xiv.utils.ErrorCatcher');
+		  goog.require('xiv.utils.ObjectAnalyzer');
+		</script>
+		
+		<script type="text/javascript">
+			function launchXImgViewWrapper() {
+				var serverRoot="https://ansirxnat.biohpc.swmed.edu:8443/xnat";
+				var a=open("/xnat/xnat-image-viewer-plugin/src/main/scripts/viewer/xiv/popup.html?/xnat/REST/projects/ITAKL_UTSW/subjects/ANSIRUTSW_S01228/experiments/ANSIRUTSW_E02957","XImgView","width=1200,height=800");
+				a.focus();
+				a.serverRoot=serverRoot;
+				var b="projects/ITAKL_UTSW/subjects/ANSIRUTSW_S01228/experiments/ANSIRUTSW_E02957";
+				a.onload=function(){
+					a.launchXImgView(b,xiv.start.ModalStates.POPUP,serverRoot)
+				}.bind(this);
+			}
+		</script>
+	</head>
+	<body>
+		<button type="button" onclick="launchXImgViewWrapper(); return false;">New Image Viewer</button> (Chrome 12+, Firefox 4+, or Safari 5.1)<br>
+	</body>
+</html>
