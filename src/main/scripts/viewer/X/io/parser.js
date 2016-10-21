@@ -229,7 +229,6 @@ X.parser.prototype.arrayMinMaxRemoveOutliers = function(data, slices) {
       var _prevRangeTC = _rangeMap.get(_numRange-1);
       var _prevRangeCount = (typeof _prevRangeTC !== 'undefined' && _prevRangeTC > 0) ? _prevRangeTC : 0;
       if (_currRangeCount>0 && _currRangeCount<=slices && _prevRangeCount==0) {
-         console.log("value=" + _value + "  -  numRange=" + _numRange + "  -  currRangeCount=" + _currRangeCount + "  -  prevRangeCount=" + _prevRangeCount);
          continue;
       }
       
