@@ -928,21 +928,15 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     volumeAttributes.dimensions = object._dimensions;
 
     // get the min and max intensities
-    var min_max = this.arrayMinMax(first_image_data);
     //******************************************
-    // NRG addition (start) (MRH:  2016/04/28)
+    // NRG addition (start) (MRH:  2016/10/20)
     // ----------------------------------------
-    // Explanation of addition.  This method occasionaly returns an outrageous value for some images.  This causes 
+    // Explanation of addition.  The standard arrayMinMax method returned outrageous values for some images which caused
     // issues with the sliders and histogram in the UI, and ultimately the display, becase the UI gets populated
-    // based on the range between minimum and maximum values.   In such cases where where outlier values are seen, 
-    // let's fix the max to 1000.  Haven't seen outragous minimums, but we'll fix those too, to zero.
+    // based on the range between minimum and maximum values.   We're creating a new arrayMinMax function to remove 
+    // outlier values.
     // ****************************************
-    if (!isFinite(min_max[1]) || min_max[1]>10000) {
-       min_max[1]=1000;
-    }
-    if (!isFinite(min_max[0]) || min_max[0]<0) {
-       min_max[0]=0;
-    }
+    var min_max = this.arrayMinMaxRemoveOutliers(first_image_data, first_image_expected_nb_slices);
     //******************************************
     //
     // NRG addition (end) 
@@ -2356,7 +2350,7 @@ We would want to skip this (0012, 0064)
 
   for (var i=nFrames; i>0; i--) {
 
-    var thisSlice = (nFrames<=1) ? slice : Object.assign({}, slice);  
+    var thisSlice = (nFrames<=1) ? slice : JSON.parse(JSON.stringify(slice)); 
     
      // jump to the beginning of the pixel data
     if (typeof pixelDataStart !== 'undefined') {

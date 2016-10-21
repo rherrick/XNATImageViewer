@@ -168,6 +168,71 @@ X.parser.prototype.arrayMinMax = function(data) {
     if(!isNaN(data[i])) {
 
       var _value = data[i];
+
+      _min = Math.min(_min, _value);
+      _max = Math.max(_max, _value);
+
+    }
+
+  }
+
+  return [ _min, _max ];
+
+};
+
+//******************************************
+// NRG addition (start) (MRH:  2016/04/28)
+// ----------------------------------------
+// New arrayMinMax function that removes outlier values.  Currently we're only removing values if we are seeing
+// one pixel per slice or less with a value in the value range we're looking at and we don't see values
+// in the previous value range.  Some images have a final pixel with a huge intensity value (maybe filler?) that
+// caused issues with sliders and display.
+// ****************************************
+/**
+ * Get the min and max values of an array removing outliers.
+ *
+ * @param {Array|Uint8Array|Uint16Array|Uint32Array|null}
+ *          data The data array to analyze.
+ * @return {!Array} An array with length 2 containing the [min, max] values.
+ */
+X.parser.prototype.arrayMinMaxRemoveOutliers = function(data, slices) {
+
+  var _oldMinMax = this.arrayMinMax(data);
+  var _minMaxDiff = _oldMinMax[1] - _oldMinMax[0];
+  if (_minMaxDiff < 5000) {
+    return _oldMinMax;  
+  }
+  var _rangeVar = Math.floor(_minMaxDiff/10); 
+
+  var _min = Infinity;
+  var _max = -Infinity;
+  var _rangeMap = new Map();
+
+  // buffer the length
+  var _datasize = data.length;
+
+  var i = 0;
+  for (i = 0; i < _datasize; i++) {
+
+    if(!isNaN(data[i])) {
+
+      var _value = data[i];
+
+      _numRange = Math.floor(_value/_rangeVar);
+      if (typeof _rangeMap.get(_numRange)!== 'undefined') {
+         _rangeMap.set(_numRange,_rangeMap.get(_numRange)+1);
+      } else {
+         _rangeMap.set(_numRange,1);
+      }
+
+      var _currRangeCount = _rangeMap.get(_numRange);
+      var _prevRangeTC = _rangeMap.get(_numRange-1);
+      var _prevRangeCount = (typeof _prevRangeTC !== 'undefined' && _prevRangeTC > 0) ? _prevRangeTC : 0;
+      if (_currRangeCount>0 && _currRangeCount<=slices && _prevRangeCount==0) {
+         console.log("value=" + _value + "  -  numRange=" + _numRange + "  -  currRangeCount=" + _currRangeCount + "  -  prevRangeCount=" + _prevRangeCount);
+         continue;
+      }
+      
       _min = Math.min(_min, _value);
       _max = Math.max(_max, _value);
 
