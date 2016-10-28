@@ -1552,6 +1552,22 @@ X.parserDCM.prototype.parseStream = function(data, object) {
   slice['pixel_spacing'] = [.1, .1, Infinity];
   slice['image_orientation_patient'] = [1, 0, 0, 0, 1, 0];
   slice['image_position_patient']  = [0, 0, 0];
+  //************************************
+  //
+  // Moka/NRG addition (start)  (MRH: 2016/10/28)
+  //
+  //------------------------------------
+  // Explanation of addition:
+  // Capture an array of image_orientation_patient and image_position_patient values for use in multi-frame DICOM
+  //------------------------------------
+  slice['image_orientation_patient_arr'] = [];
+  slice['image_position_patient_arr'] = [];
+  //************************************
+  //
+  // Moka/NRG addition (end)
+  //
+  //************************************
+  slice['counter'] = 0;
   // Transfer syntax UIDs
   // 1.2.840.10008.1.2: Implicit VR Little Endian
   // 1.2.840.10008.1.2.1: Explicit VR Little Endian
@@ -1632,8 +1648,7 @@ X.parserDCM.prototype.parseStream = function(data, object) {
     // Moka/NRG addition (end)
     //
     //************************************
-
-
+    
   while (_bytePointer <  _bytes.length) {
 
       _tagGroup = _bytes[_bytePointer++];
@@ -1922,7 +1937,6 @@ We would want to skip this (0012, 0064)
 
         break;
 
-
       case 0x0028:
       // Group of IMAGE INFO
         switch (_tagElement) {
@@ -2100,6 +2114,21 @@ We would want to skip this (0012, 0064)
               _image_position = _image_position.split("\\");
               slice['image_position_patient'] = [ parseFloat(_image_position[0]), parseFloat(_image_position[1]),
                   parseFloat(_image_position[2]) ];
+              //************************************
+              //
+              // Moka/NRG addition (start)  (MRH:2016/10/28)
+              //
+              //------------------------------------
+              // Explanation of addition:
+              // Capture an array of image_orientation_patient and image_position_patient values for use in multi-frame DICOM
+              //------------------------------------
+              slice['image_position_patient_arr'].push(slice['image_position_patient']);
+              //************************************
+              //
+              // Moka/NRG addition (end)
+              //
+              //************************************
+              //window.console.log("HELLO - image_position_patient",slice['image_orientation_patient']);
               // _tagCount--;
             //} else {
             //   window.console.log("WARNING:  ALREADY DEFINED - slice['image_position_patient']",slice['image_position_patient']);
@@ -2125,6 +2154,20 @@ We would want to skip this (0012, 0064)
                   parseFloat(_image_orientation[1]), parseFloat(_image_orientation[2]),
                   parseFloat(_image_orientation[3]), parseFloat(_image_orientation[4]),
                   parseFloat(_image_orientation[5]) ];
+              //************************************
+              //
+              // Moka/NRG addition (start)  (MRH:2016/10/28)
+              //
+              //------------------------------------
+              // Explanation of addition:
+              // Capture an array of image_orientation_patient and image_position_patient values for use in multi-frame DICOM
+              //------------------------------------
+              slice['image_orientation_patient_arr'].push(slice['image_orientation_patient']);
+              //************************************
+              //
+              // Moka/NRG addition (end)
+              //
+              //************************************
               // _tagCount--;
             //} else {
             //   window.console.log("WARNING:  ALREADY DEFINED - slice['image_orientation_patient']",slice['image_orientation_patient']);
@@ -2348,6 +2391,9 @@ We would want to skip this (0012, 0064)
 
   var pixelDataStart = slice['pixel_data_start'];
 
+  var iopos;
+  var ippos;
+  var ippos_prev;
   for (var i=nFrames; i>0; i--) {
 
     var thisSlice = (nFrames<=1) ? slice : JSON.parse(JSON.stringify(slice)); 
@@ -2381,14 +2427,36 @@ We would want to skip this (0012, 0064)
     if (nFrames>1) {
       thisSlice['instance_number'] = nFrames-i+1;
     }
+    
+    // MRH:  2016/10/28
+    // Pull slice image_orientation_patient and image_position patient from the array of values collected earlier
+    // NOTE:  some of the values are getting skipped.  I'm not sure why.  Here, we're doing the best we can to 
+    // match values up with values from the arrays.  Using the values allows us to determine orientation
+    // TODO:  Find and fix parser issue keeping us from pulling in all values.
+    if (slice['image_orientation_patient_arr'].length>1) {
+      if (slice['image_orientation_patient_arr'].length<nFrames) {
+         iopos = Math.round((i-1)*(slice['image_orientation_patient_arr'].length/nFrames));
+         if (iopos>=nFrames) {
+            iopos--;
+         } 
+      }
+      ippos = (slice['image_orientation_patient_arr'].length*2<=slice['image_position_patient_arr'].length) ? iopos*2 : iopos;
+      if (ippos==ippos_prev && ippos>0) {
+        ippos--;
+      }
+      iopos = (iopos>=0 && iopos<thisSlice["image_orientation_patient_arr"].length) ? iopos : ((iopos>=0) ? thisSlice["image_orientation_patient_arr"].length-1 : 0); 
+      ippos = (ippos>=0 && ippos<thisSlice["image_position_patient_arr"].length) ? ippos : ((ippos>=0) ? thisSlice["image_position_patient_arr"].length-1 : 0); 
+      thisSlice["image_orientation_patient"]=(thisSlice["image_orientation_patient_arr"])[iopos];
+      thisSlice["image_position_patient"]=(thisSlice["image_position_patient_arr"])[ippos];
+      ippos_prev = ippos;
+    }
+    object.slices.push(thisSlice);
         
   //******************************************
   // 
   // NRG changes (end) 
   // 
   // ****************************************
-
-    object.slices.push(thisSlice);
   } 
 
   return object;
