@@ -651,9 +651,9 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 			     "of files because " + 
 			     "volume's \"reslicing\" property is set " + 
 			     "to false.");     
+	  first_image_expected_nb_slices = first_image_stacks;
 	  window.console.log("Expected slices:", 
 			     first_image_expected_nb_slices);
-	  first_image_expected_nb_slices = first_image_stacks;
 
 	  window.console.log('Ordering:', _ordering);
       }
@@ -1629,7 +1629,9 @@ X.parserDCM.prototype.parseStream = function(data, object) {
     var _skippables = {};
     // For DICOMs w/ Little Endian Explicit
     _skippables.LEE = [
-	[0x0008, 0x1140],
+        // NOTE:  Commenting this out.  0x0008,0x1140 is required for proper multi-frame DICOM support.  I believe this change was made in response to XNAT-3257.
+        // The session in that ticket currently loads with this commented out.
+	//[0x0008, 0x1140],
 	[0x0009, 0x7770],
 	[0x0088, 0x0200],	
     ]
@@ -1649,6 +1651,8 @@ X.parserDCM.prototype.parseStream = function(data, object) {
     //
     //************************************
     
+  var _prevPixelData = false;
+  var _inImageInfo = false;
   while (_bytePointer <  _bytes.length) {
 
       _tagGroup = _bytes[_bytePointer++];
@@ -1715,12 +1719,13 @@ X.parserDCM.prototype.parseStream = function(data, object) {
       if (_tagGroup == 0x7FE0) {
         // Group of DICOM meta info header
         if (_tagElement == 0x0010) {
+            //console.log("PixelData - 7fe0,0010 - " + _bytePointer);
             slice['pixel_data_start'] = _bytePointer * 2 + 6;
             _bytePointer+=_VL/2;
-            break;
+            _prevPixelData = true;
+            _inImageInfo = false;
         }
       }
-
       //******************************************
       //
       // NRG addition (end) 
@@ -1846,7 +1851,7 @@ We would want to skip this (0012, 0064)
 	      "Current memory address ", _dicomType, '(0x' 
 		  + _tagGroup.toString(16) + ', 0x' 
 		  + _tagElement.toString(16) +')');
-		  */
+	  */
 	  //window.console.log('DICOM type:', _dicomType);
 	  
 	  if (_skipCurrent){
@@ -1907,6 +1912,13 @@ We would want to skip this (0012, 0064)
       //
       //************************************
 
+    var _clearPrevPixelDataAndInImageInfo = function() {
+       if (_prevPixelData && _inImageInfo) {
+           _inImageInfo = false;
+           _prevPixelData = false;
+       } 
+    }
+
     switch (_tagGroup) {
       case 0x0002:
         // Group of DICOM meta info header
@@ -1939,9 +1951,10 @@ We would want to skip this (0012, 0064)
 
       case 0x0028:
       // Group of IMAGE INFO
+        _inImageInfo = true;
         switch (_tagElement) {
           case 0x0008:
-            if (typeof slice['number_of_frames'] == 'undefined') {
+            if (_prevPixelData || typeof slice['number_of_frames'] == 'undefined') {
               var _position = '';
               for (i = 0; i < _VL / 2; i++) {
                 var _short = _bytes[_bytePointer++];
@@ -1959,7 +1972,7 @@ We would want to skip this (0012, 0064)
             }
             break;
           case 0x0009:
-            if (typeof slice['frame_increment_pointer'] == 'undefined') {
+            if (_prevPixelData || typeof slice['frame_increment_pointer'] == 'undefined') {
               var _position = '';
               for (i = 0; i < _VL / 2; i++) {
                 var _short = _bytes[_bytePointer++];
@@ -1977,7 +1990,7 @@ We would want to skip this (0012, 0064)
             }
             break;
           case 0x0010:
-            if (typeof slice['rows'] == 'undefined') {
+            if (_prevPixelData || typeof slice['rows'] == 'undefined') {
               // rows
               slice['rows'] = _bytes[_bytePointer];
               _bytePointer+=_VL/2;
@@ -1988,7 +2001,7 @@ We would want to skip this (0012, 0064)
             break;
           case 0x0011:
             // cols
-            if (typeof slice['columns'] == 'undefined') {
+            if (_prevPixelData || typeof slice['columns'] == 'undefined') {
               slice['columns'] = _bytes[_bytePointer];
               _bytePointer+=_VL/2;
             } else {
@@ -2006,16 +2019,17 @@ We would want to skip this (0012, 0064)
             break;
           case 0x0101:
             // bits stored
-            if (typeof slice['bits_stored'] == 'undefined') {
+            if (_prevPixelData || typeof slice['bits_stored'] == 'undefined') {
               slice['bits_stored'] = _bytes[_bytePointer];
               _bytePointer+=_VL/2;
             } else {
                window.console.log("WARNING:  ALREADY DEFINED - slice['bits_stored']",slice['bits_stored']);
                _bytePointer = X.parserDCM.prototype.handleDefaults(_bytes, _bytePointer, _VR, _VL);
             }
+            break;
           case 0x0002:
             // number of images
-            if (typeof slice['number_of_images'] == 'undefined') {
+            if (_prevPixelData || typeof slice['number_of_images'] == 'undefined') {
               slice['number_of_images'] = _bytes[_bytePointer];
               _bytePointer+=_VL/2;
             } else {
@@ -2062,6 +2076,7 @@ We would want to skip this (0012, 0064)
         break;
       
       case 0x0020:
+        _clearPrevPixelDataAndInImageInfo();
         // Group of SLICE INFO
         switch (_tagElement) {
           case 0x000e:
@@ -2128,7 +2143,6 @@ We would want to skip this (0012, 0064)
               // Moka/NRG addition (end)
               //
               //************************************
-              //window.console.log("HELLO - image_position_patient",slice['image_orientation_patient']);
               // _tagCount--;
             //} else {
             //   window.console.log("WARNING:  ALREADY DEFINED - slice['image_position_patient']",slice['image_position_patient']);
@@ -2183,6 +2197,7 @@ We would want to skip this (0012, 0064)
         break;
 
     case 0xfffe:
+        _clearPrevPixelDataAndInImageInfo();
         // Group of undefined item
         // here we are only interested in the InstanceNumber
         switch (_tagElement) {
@@ -2201,6 +2216,7 @@ We would want to skip this (0012, 0064)
         break;
 
     case 0x0008:
+        _clearPrevPixelDataAndInImageInfo();
         // Group of SLICE INFO
         // here we are only interested in the InstanceNumber
         switch (_tagElement) {
@@ -2264,6 +2280,7 @@ We would want to skip this (0012, 0064)
 
 
     case 0x0010:
+        _clearPrevPixelDataAndInImageInfo();
         // Group of SLICE INFO
         // here we are only interested in the InstanceNumber
         switch (_tagElement) {
@@ -2326,6 +2343,7 @@ We would want to skip this (0012, 0064)
     //       }
 
       default:
+        _clearPrevPixelDataAndInImageInfo();
         _bytePointer = X.parserDCM.prototype.handleDefaults(
 	     _bytes, _bytePointer, _VR, _VL);
         //******************************************
@@ -2432,13 +2450,15 @@ We would want to skip this (0012, 0064)
     // Pull slice image_orientation_patient and image_position patient from the array of values collected earlier
     // NOTE:  some of the values are getting skipped.  I'm not sure why.  Here, we're doing the best we can to 
     // match values up with values from the arrays.  Using the values allows us to determine orientation
-    // TODO:  Find and fix parser issue keeping us from pulling in all values.
+    // UPDATE:  I believe fix for XNAT-4568 (2016/11/10) fixes the issue of some tags being skipped.
     if (slice['image_orientation_patient_arr'].length>1) {
       if (slice['image_orientation_patient_arr'].length<nFrames) {
          iopos = Math.round((i-1)*(slice['image_orientation_patient_arr'].length/nFrames));
          if (iopos>=nFrames) {
             iopos--;
          } 
+      } else {
+         iopos = i;
       }
       ippos = (slice['image_orientation_patient_arr'].length*2<=slice['image_position_patient_arr'].length) ? iopos*2 : iopos;
       if (ippos==ippos_prev && ippos>0) {
