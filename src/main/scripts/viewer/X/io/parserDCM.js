@@ -62,7 +62,6 @@ X.parserDCM = function() {
 goog.inherits(X.parserDCM, X.parser);
 
 
-
 /**
  * @inheritDoc
  */
@@ -113,6 +112,43 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
         throw new Error('This scan does not contain imaging data that can be visualized.');
     }
 
+    try {
+
+       this.doSlicing(container, object, data, flag);
+ 
+    } catch (e) {
+
+       // The slicer has problems with some orientations that need to be tracked down.  Try slicer again specifying default orientation for all slices.
+       console.log("ERROR: Slicer exception.  Trying again using default image orientation",e);
+       for (var i = 0; i < object.slices.length; i++) {
+           var slice = object.slices[i];
+           slice['image_orientation_patient'] = [1, 0, 0, 0, 1, 0];
+       }
+       this.doSlicing(container, object, data, flag);
+       // TODO:  XImgView specific code here. Would be better to move this out of the Xtk code, but we need to warn users.
+       if (typeof xiv !== 'undefined' && typeof xiv.ui !== 'undefined' && typeof xiv.ui.ViewBoxDialogs !== 'undefined') {
+           var ele = document.getElementsByClassName('xiv-ui-viewbox-viewframe');
+           if (ele.length>0) {
+              setTimeout(function(){
+                 xiv.ui.ViewBoxDialogs.createModalOkDialog("WARNING:  Display orientation for this image could not be determined.", ele[0], null)
+              },1000);
+           }
+       }
+    }
+
+  }
+      
+  // the object should be set up here, so let's fire a modified event
+  var modifiedEvent = new X.event.ModifiedEvent();
+  modifiedEvent._object = object;
+  modifiedEvent._container = container;
+  this.dispatchEvent(modifiedEvent);
+
+}
+
+
+X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
+
     //************************************
     //
     // ErasmusMC addition (end)
@@ -161,6 +197,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     var first_image_stacks = first_image.length;
     // container for volume specific information
     var volumeAttributes = {};
+
 
     ////////////////////////////////////////////////////////////////////////
     //
@@ -276,7 +313,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
       //
       //************************************
       
-
       if ((_ordering == 'image_position_patient' && first_image_stacks < 5) ||
           (object['series_description'] != undefined && object['series_description'].toLowerCase().search("survey") != -1 && first_image_stacks < 20)) {
 
@@ -473,7 +509,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 	      }
 	  }
 	      
-	  
 
 	  //
 	  // Determine if the 'instance_number's are out of order.
@@ -1329,6 +1364,10 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 	  object[X.volume.REORIENTED_DIMENSIONS_KEY] = 
 	      _transformedDims;
 
+          if (_transformedDims[0] !== first_image_stacks && _transformedDims[1] !== first_image_stacks && _transformedDims[2] !== first_image_stacks) {
+             throw new Error("ERROR:  No transformed dimension matches the expected dimensions");
+          }
+
 	  //
 	  // Determine the anatomical orientation of the 
 	  // volume based on the _transformedDims array.
@@ -1406,8 +1445,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 		  first_image[0]['pixel_spacing'][2];
 	  } 
 
-
-
 	  //
 	  // Output messages as necessary
 	  //
@@ -1418,13 +1455,10 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 	      "acquired properties."
 	  window.console.log(_msg);
 
-
 	  window.console.log("_transformedDims", _transformedDims);
  	  window.console.log("RASSpacing", volumeAttributes.RASSpacing);
 	  window.console.log("RASDimensions", volumeAttributes.RASDimensions);
 	  window.console.log("RASOrigin", volumeAttributes.RASOrigin);
-	  /*
-	  */
       }
       //******************************
       //
@@ -1438,14 +1472,6 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
     // re-slice the data in SAGITTAL, CORONAL and AXIAL directions
 
       object._image = this.reslice(object);
-      
-  }
-
-  // the object should be set up here, so let's fire a modified event
-  var modifiedEvent = new X.event.ModifiedEvent();
-  modifiedEvent._object = object;
-  modifiedEvent._container = container;
-  this.dispatchEvent(modifiedEvent);
 
 };
 
