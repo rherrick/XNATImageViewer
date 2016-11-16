@@ -120,9 +120,18 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
 
        // The slicer has problems with some orientations that need to be tracked down.  Try slicer again specifying default orientation for all slices.
        console.log("ERROR: Slicer exception.  Trying again using default image orientation",e);
+       var default_orientation;
+       // try to improve chances of picking the actual orientation.
+       if (Math.abs(object.slices[0]['image_orientation_patient'][1])>Math.abs(object.slices[0]['image_orientation_patient'][0])) {
+          default_orientation = [0, 1, 0, 0, 0, -1];
+       } else if (Math.abs(object.slices[0]['image_orientation_patient'][4])>Math.abs(object.slices[0]['image_orientation_patient'][5])) {
+          default_orientation = [1, 0, 0, 0, 1, 0];
+       } else {
+          default_orientation = [1, 0, 0, 0, 0, -1];
+       }
        for (var i = 0; i < object.slices.length; i++) {
            var slice = object.slices[i];
-           slice['image_orientation_patient'] = [1, 0, 0, 0, 1, 0];
+           slice['image_orientation_patient'] = default_orientation;
        }
        this.doSlicing(container, object, data, flag);
        // TODO:  XImgView specific code here. Would be better to move this out of the Xtk code, but we need to warn users.
@@ -130,7 +139,7 @@ X.parserDCM.prototype.parse = function(container, object, data, flag) {
            var ele = document.getElementsByClassName('xiv-ui-viewbox-viewframe');
            if (ele.length>0) {
               setTimeout(function(){
-                 xiv.ui.ViewBoxDialogs.createModalOkDialog("WARNING:  Display orientation for this image could not be determined.", ele[0], null)
+                 xiv.ui.ViewBoxDialogs.createModalOkDialog("WARNING:  Display orientation for this image could not be reliably determined.", ele[0], null)
               },1000);
            }
        }
@@ -366,26 +375,28 @@ X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
       // For debugging purposes.
       //
       //************************************
+      /*
       var _deb = true;
       if (_deb){
 	  var i = 0;
 	  var len = first_image.length;
 	  for (; i<len; i++){
-	      /*
 	      window.console.log(
 		  '\n',
 		  i,
 		  '\nInstance number:',
 		  first_image[i]['instance_number'], 
+		  '\nImage Orientation Patient:' , 
+		  first_image[i]['image_orientation_patient'], 
 		  '\nImage Position Patient:',
 		  first_image[i]['image_position_patient'], 
 		  '\nPixel Spacing:' , 
 		  first_image[i]['pixel_spacing'], 
 		  '\nInitial Ordering:', 
 		  _ordering);
-		  */
 	  }
       }
+      */
       //************************************
       //
       // Moka/NRG addition (end)
