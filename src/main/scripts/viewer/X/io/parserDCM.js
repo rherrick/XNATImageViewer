@@ -385,9 +385,9 @@ X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
 		  '\n',
 		  i,
 		  '\nInstance number:',
-		  first_image[i]['instance_number'], 
-		  '\nImage Orientation Patient:' , 
 		  first_image[i]['image_orientation_patient'], 
+		  '\nImage Orientation Patient:' , 
+		  first_image[i]['instance_number'], 
 		  '\nImage Position Patient:',
 		  first_image[i]['image_position_patient'], 
 		  '\nPixel Spacing:' , 
@@ -1499,14 +1499,24 @@ X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
  */
  X.parserDCM.prototype.handleDefaults = function(_bytes, _bytePointer, _VR, _VL) {
     switch (_VR){
+        // OB
       case 16975:
-        // UL
-      case 20819:
-        // SQ
-      case 20053:
-        // UN
-      case 22351:
         // OW
+      case 22351:
+        // SQ
+      case 20819:
+        // UN
+      case 20053:
+        // UT
+      case 21589:
+// See ftp://dicom.nema.org/medical/Dicom/2013/output/chtml/part05/chapter_7.html (See 7.1.2).  2016/11/28 - added UT
+//  to previous list to fix issues with some images.  It appears that the following two values should also be added
+//  to this list, but adding UL caused issues with some images, and the code seems to be reading those fine without passing
+//  through here, so I'm leaving both commented out for now.  
+//        // OF
+//      case 17999:
+//        // UL
+//      case 19541:
 
         // bytes to bits
         function byte2bits(a)
@@ -1542,6 +1552,7 @@ X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
           _VL = 0;
         }
 
+        //console.log("Computed VL=", _VL);
         _bytePointer+=_VL/2;
       break;
 
@@ -1555,6 +1566,7 @@ X.parserDCM.prototype.doSlicing = function(container, object, data, flag) {
   // Explanation of addition.  Some values were being returned as decimal values here.  Let's make sure that doesn't happen.
   // ****************************************
   if (_bytePointer % 1 !== 0) {
+    //console.log("WARNING:  Decimal pointer - rounded");
     _bytePointer = Math.round(_bytePointer);
   }
   //******************************************
@@ -1887,7 +1899,7 @@ We would want to skip this (0012, 0064)
 	  window.console.log(
 	      "Current memory address ", _dicomType, '(0x' 
 		  + _tagGroup.toString(16) + ', 0x' 
-		  + _tagElement.toString(16) +')');
+		  + _tagElement.toString(16) +'), VR=' + _VR + ", VL=" + _VL);
 	  */
 	  //window.console.log('DICOM type:', _dicomType);
 	  
