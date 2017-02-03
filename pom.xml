@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>org.nrg.xnatx.plugins</groupId>
-    <artifactId>ximgview-plugin</artifactId>
+    <artifactId>ximgview-plugin-no-extensions</artifactId>
     <name>XNAT Image Viewer Module (XImgView)</name>
     <description>
         This is the module for the XNAT Image Viewer. XImgView is an HTML5-based
