@@ -98,6 +98,10 @@ function(gxnatZip, opt_callback, opt_fileExtensions) {
     // Set the fileData_ keys to be that of the file names
     //
     var allFiles = this.getFiles();
+
+
+    var i, len, currFile, fragment, fileNameOnly, splitPath;
+
     goog.array.forEach(allFiles, function(fileName){
 	this.fileData_[fileName] = null;
     }.bind(this))
@@ -106,7 +110,6 @@ function(gxnatZip, opt_callback, opt_fileExtensions) {
     // Match the fileData to the stored files, popuplating the fileData_
     // object as needed.
     //
-    var i, len, currFile, fragment, fileNameOnly, splitPath;
     
     gxnatZip.loopFiles(function(fileName, fileDataArrayBuffer){
 	i = 0;
@@ -152,13 +155,17 @@ function(gxnatZip, opt_callback, opt_fileExtensions) {
 		    var i = 0;
 		    var len = opt_fileExtensions.length;
 		    for (; i<len; i++){
-			if (goog.string.caseInsensitiveEndsWith(
-			    currFile, opt_fileExtensions[i])){
-
-			    //window.console.log("\nFOUND!", currFile);
-			    this.fileData_[currFile] = fileDataArrayBuffer;
-			    i = len;			    
-			}
+				if (
+                        (goog.string.caseInsensitiveEndsWith(currFile, opt_fileExtensions[i])) ||
+				        (opt_fileExtensions[i] == "_NO_EXTENSION_" && !goog.string.contains(currFile,",")) ||
+				        (opt_fileExtensions[i] == "_NUMERIC_" && currFile.match(gxnat.vis.Scan.NUM_REGEX)) ||
+				        (opt_fileExtensions[i] == "_NUM_ONLY_" && currFile.match(gxnat.vis.Scan.NONLY_REGEX)) 
+                    ){
+				    //window.console.log("\nFOUND!", currFile);
+				    this.fileData_[currFile] = fileDataArrayBuffer;
+				    i = len;			    
+	                break;
+				}
 		    }
 		}
 		//

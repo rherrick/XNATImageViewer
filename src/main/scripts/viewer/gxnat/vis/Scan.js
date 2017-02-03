@@ -80,14 +80,35 @@ goog.exportSymbol('gxnat.vis.Scan', gxnat.vis.Scan);
  * @const
  * @type {!Array.<string>}
  */
+/**
+ * NOTE:  Modification to pull files with no file extensions, numeric-only extensions, and numeric-only names.  It's unfortunate that the image viewer looks 
+ * only at the list of all files, and doesn't really use the concept of resources (folders).  
+ */
 gxnat.vis.Scan.acceptableFileTypes = [    
     'dcm',
     'dicom',
     'ima',
+    //'_NO_EXTENSION_',
+    '_NUMERIC_',
+    '_NUM_ONLY_',
     'd',
     'nii.gz',
     'nii',
-]
+];
+
+/**
+ * Regular expression to check for numeric file name extensions
+ * @const
+ * @type {RegExp}
+ */
+gxnat.vis.Scan.NUM_REGEX = /[.][\d]*$/;
+
+/**
+ * Regular expression to check for numeric file name extensions
+ * @const
+ * @type {RegExp}
+ */
+gxnat.vis.Scan.NONLY_REGEX = /([\/\\:][\d]*$)|(^[\d]*$)/;
 
 /**
  * We'll drop scans that have more than 1500 frames
@@ -311,17 +332,27 @@ gxnat.vis.Scan.prototype.getFileList = function(callback){
         var b_hasdcm=false;
         var b_hasnii=false;
         if (a.Viewables.length>0 && a.Viewables[0].getFiles().length>0) {
-            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 ||
-                a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
+            if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
+                a_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NO_EXTENSION_") && !goog.string.contains( a.Viewables[0].getFiles()[0], ",")) {
+                a_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NUMERIC_") && a.Viewables[0].getFiles()[0].match(gxnat.vis.Scan.NUM_REGEX)) {
+                a_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NUM_ONLY_") && a.Viewables[0].getFiles()[0].match(gxnat.vis.Scan.NONLY_REGEX)) {
                 a_hasdcm=true;
             } else if (a.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
                 a_hasnii=true;
             }
         } 
         if (b.Viewables.length>0 && b.Viewables[0].getFiles().length>0) {
-            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 ||
-                b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
+            if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".d")>=0 || b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".ima")>=0) {
                 b_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NO_EXTENSION_") && !goog.string.contains( b.Viewables[0].getFiles()[0], ",")) {
+                b_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NUMERIC_") && b.Viewables[0].getFiles()[0].match(gxnat.vis.Scan.NUM_REGEX)) {
+                a_hasdcm=true;
+            } else if (goog.array.contains(gxnat.vis.Scan.acceptableFileTypes,"_NUM_ONLY_") && b.Viewables[0].getFiles()[0].match(gxnat.vis.Scan.NONLY_REGEX)) {
+                a_hasdcm=true;
             } else if (b.Viewables[0].getFiles()[0].toLowerCase().indexOf(".nii")>=0) {
                 b_hasnii=true;
             }
@@ -351,12 +382,30 @@ gxnat.vis.Scan.prototype.fileFilter = function(fileName){
     var i = 0;
     var len = gxnat.vis.Scan.acceptableFileTypes.length;
     for (; i<len; i++) {
-    //window.console.log(fileName);
-    if (goog.string.caseInsensitiveEndsWith(fileName, 
-        '.' + gxnat.vis.Scan.acceptableFileTypes[i])) {
-        //window.console.log('Found usable scan file: ', fileName);
-        return fileName;
-    } 
+        //window.console.log(fileName);
+        if (gxnat.vis.Scan.acceptableFileTypes[i] !== "_NO_EXTENSION_" && gxnat.vis.Scan.acceptableFileTypes[i] !== "_NUMERIC_" &&
+             gxnat.vis.Scan.acceptableFileTypes[i] !== "_NUM_ONLY_") {
+            if (goog.string.caseInsensitiveEndsWith(fileName, 
+                '.' + gxnat.vis.Scan.acceptableFileTypes[i])) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            } 
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NUMERIC_") {
+            if (fileName.match(gxnat.vis.Scan.NUM_REGEX)) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NUM_ONLY_") {
+            if (fileName.match(gxnat.vis.Scan.NONLY_REGEX)) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NO_EXTENSION_") {
+            if (!goog.string.contains(fileName,'.')) { 
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            } 
+        } 
     }
     //window.console.log('Found skippable scan file: ', fileName);
     return null;
