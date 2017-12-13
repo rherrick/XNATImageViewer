@@ -378,9 +378,38 @@ gxnat.vis.Scan.prototype.fileFilter = function(fileName){
     fileName = gxnat.vis.Scan.superClass_.fileFilter.call(this, fileName);
     //window.console.log("FILENAME", fileName);
     if (!goog.isDefAndNotNull(fileName)) { return };
-//    window.alert(fileName);
-//    window.console.log('Found skippable scan file: ', fileName);
-    return fileName;
+ var i = 0;
+    var len = gxnat.vis.Scan.acceptableFileTypes.length;
+    for (; i<len; i++) {
+        //window.console.log(fileName);
+        if (gxnat.vis.Scan.acceptableFileTypes[i] !== "_NO_EXTENSION_" && gxnat.vis.Scan.acceptableFileTypes[i] !== "_NUMERIC_" &&
+             gxnat.vis.Scan.acceptableFileTypes[i] !== "_NUM_ONLY_") {
+            if (goog.string.caseInsensitiveEndsWith(fileName,
+                '.' + gxnat.vis.Scan.acceptableFileTypes[i])) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NUMERIC_") {
+            if (fileName.match(gxnat.vis.Scan.NUM_REGEX)) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NUM_ONLY_") {
+            if (fileName.match(gxnat.vis.Scan.NONLY_REGEX)) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        } else if (gxnat.vis.Scan.acceptableFileTypes[i] == "_NO_EXTENSION_") {
+            if (!goog.string.contains(fileName,'.')) {
+                //window.console.log('Found usable scan file: ', fileName);
+                return fileName;
+            }
+        }
+    }
+
+    window.console.log('Found skippable scan file: ', fileName);
+    return null;
+
 }
 
 
