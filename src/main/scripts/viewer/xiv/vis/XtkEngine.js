@@ -1202,9 +1202,6 @@ xiv.vis.XtkEngine.isFiber = function(ext) {
 	true: false;
 }
 
-
-
-
 /**
  * Creates and returns a new X object, generating
  * the type of X object by the extension provided in
@@ -1222,6 +1219,22 @@ function(fileCollection, opt_fileData) {
     var ext = (goog.isArray(fileCollection)) ? 
 	nrg.string.getFileExtension(fileCollection[0]) : 
 	nrg.string.getFileExtension(fileCollection);
+
+    // NOTE:  Xtk needs a file extension.  We're now accepting some DICOM without them.  We'll set the 
+    // extension here to dcm for unknown extensions.  The only files that should get here are ones
+    // we've let through.
+    if (!goog.string.contains(gxnat.vis.Scan.acceptableFileTypes, ext)) {
+        ext = "dcm"
+	for (var i=0;i<fileCollection.length;i++) {
+		fileCollection[i] = fileCollection[i] + ".dcm";
+	}
+	for (var p in opt_fileData) {
+		if (opt_fileData.hasOwnProperty(p)) {
+			Object.defineProperty(opt_fileData, p + ".dcm", Object.getOwnPropertyDescriptor(opt_fileData, p));
+			delete opt_fileData[p];
+		}
+	}
+    }
 
     var obj = this.generateXtkObjectFromExtension_(ext);  
     

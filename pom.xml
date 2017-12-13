@@ -12,7 +12,7 @@
 
     <groupId>org.nrg.xnatx.plugins</groupId>
     <artifactId>ximgview-plugin</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <name>XNAT Image Viewer Module (XImgView)</name>
     <description>
