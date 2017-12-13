@@ -378,14 +378,9 @@ gxnat.vis.Scan.prototype.fileFilter = function(fileName){
     fileName = gxnat.vis.Scan.superClass_.fileFilter.call(this, fileName);
     //window.console.log("FILENAME", fileName);
     if (!goog.isDefAndNotNull(fileName)) { return };
-    
-            if (!goog.string.caseInsensitiveEndsWith(fileName, 
-                '.xml' ) {
-                window.console.log('Found usable scan file: ', fileName);
-                return fileName;
-            } 
-    window.console.log('Found skippable scan file: ', fileName);
-    return null;
+//    window.alert(fileName);
+//    window.console.log('Found skippable scan file: ', fileName);
+    return fileName;
 }
 
 
